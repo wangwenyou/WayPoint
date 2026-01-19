@@ -173,24 +173,11 @@ class KeyInterceptingTextField: NSTextField {
             case .inject: delegate.onCommandReturn?()
             case .terminal: delegate.onCommandT?()
             case .editor: delegate.onOptionReturn?()
+            case .copyPath: delegate.onCommandC?()
             case .toggleFavorite: delegate.onCommandF?()
             case .exclude: delegate.onCommandDelete?()
             }
             return true
-        }
-        
-        let isCommand = event.modifierFlags.contains(.command)
-        
-        // 2. 处理硬编码的保留快捷键 (如 Copy)
-        if isCommand {
-            if event.charactersIgnoringModifiers == "c" {
-                // 只有在没有选中文本时才拦截 Cmd+C
-                if let textView = currentEditor() as? NSTextView,
-                   textView.selectedRange.length == 0 {
-                    delegate.onCommandC?()
-                    return true
-                }
-            }
         }
         
         return super.performKeyEquivalent(with: event)

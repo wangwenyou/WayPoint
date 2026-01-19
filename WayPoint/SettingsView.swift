@@ -23,10 +23,10 @@ struct SettingsView: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("Settings")
+                Text(NSLocalizedString("Settings", comment: ""))
                     .font(.headline)
                 Spacer()
-                Button("Done") {
+                Button(NSLocalizedString("Done", comment: "")) {
                     isPresented = false
                 }
                 .keyboardShortcut(.defaultAction)
@@ -42,34 +42,36 @@ struct SettingsView: View {
                     keysString: $keysString,
                     isRecordingGlobal: $isRecordingGlobal,
                     languageManager: languageManager,
-                    onUpdateShortcut: { k, m in updateShortcut(keyCode: k, modifiers: m) }
+                    onUpdateShortcut: { event in updateShortcut(event: event) }
                 )
                 .tabItem {
-                    Label("General", systemImage: "gear")
+                    Label(NSLocalizedString("General", comment: ""), systemImage: "gear")
                 }
                 
                 // Tab 2: Shortcuts
                 ActionShortcutsView(
                     shortcutManager: shortcutManager,
                     recordingAction: $recordingAction,
-                    onUpdate: { action, char, code, mods in
-                        shortcutManager.updateShortcut(action: action, keyChar: char, keyCode: code, modifiers: mods)
+                    onUpdate: { action, event in
+                        // 提取字符：优先使用 charactersIgnoringModifiers，去掉空白
+                        let char = event.charactersIgnoringModifiers?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() ?? ""
+                        shortcutManager.updateShortcut(action: action, keyChar: char, keyCode: event.keyCode, modifiers: event.modifierFlags)
                     }
                 )
                 .tabItem {
-                    Label("Shortcuts", systemImage: "keyboard")
+                    Label(NSLocalizedString("Shortcuts", comment: ""), systemImage: "keyboard")
                 }
                 
                 // Tab 3: Exclusions
                 ExcludedPathsView(storage: storage)
                 .tabItem {
-                    Label("Exclusions", systemImage: "xmark.bin")
+                    Label(NSLocalizedString("Exclusions", comment: ""), systemImage: "xmark.bin")
                 }
                 
                 // Tab 4: About & Update
                 AboutSettingsView(updateChecker: updateChecker)
                 .tabItem {
-                    Label("About", systemImage: "info.circle")
+                    Label(NSLocalizedString("About", comment: ""), systemImage: "info.circle")
                 }
             }
             .padding(10)
@@ -99,7 +101,10 @@ struct SettingsView: View {
         }
     }
     
-    private func updateShortcut(keyCode: UInt32, modifiers: NSEvent.ModifierFlags) {
+    private func updateShortcut(event: NSEvent) {
+        let keyCode = UInt32(event.keyCode)
+        let modifiers = event.modifierFlags
+        
         var carbonMods: UInt32 = 0
         if modifiers.contains(.command) { carbonMods |= UInt32(cmdKey) }
         if modifiers.contains(.option) { carbonMods |= UInt32(optionKey) }
@@ -121,7 +126,12 @@ struct SettingsView: View {
         
         if keyCode == kVK_Space {
             str += "Space"
+        } else if keyCode == 36 {
+            str += "↵"
+        } else if keyCode == 51 {
+            str += "⌫"
         } else {
+            // 这里简单处理，实际可根据 keyCode 获取字符
             str += "Key(\(keyCode))"
         }
         return str
@@ -134,15 +144,14 @@ struct GeneralSettingsView: View {
     @Binding var keysString: String
     @Binding var isRecordingGlobal: Bool
     @ObservedObject var languageManager: LanguageManager
-    var onUpdateShortcut: (UInt32, NSEvent.ModifierFlags) -> Void
+    var onUpdateShortcut: (NSEvent) -> Void
     
     var body: some View {
         Form {
             Section(header: Text(NSLocalizedString("Language", comment: ""))) {
                 VStack(alignment: .leading, spacing: 10) {
                     Picker("", selection: $languageManager.currentLanguage) {
-                        ForEach(AppLanguage.allCases) {
-                            lang in
+                        ForEach(AppLanguage.allCases) { lang in
                             Text(lang.displayName).tag(lang)
                         }
                     }
@@ -156,7 +165,7 @@ struct GeneralSettingsView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                         
-                        Spacer()
+                        Spacer() 
                         
                         Button(NSLocalizedString("Restart Now", comment: "")) {
                             languageManager.restartApp()
@@ -277,17 +286,16 @@ struct AboutSettingsView: View {
 struct ActionShortcutsView: View {
     @ObservedObject var shortcutManager: LocalShortcutManager
     @Binding var recordingAction: LocalAction?
-    var onUpdate: (LocalAction, String, UInt16, NSEvent.ModifierFlags) -> Void
+    var onUpdate: (LocalAction, NSEvent) -> Void
     
     var body: some View {
         VStack {
             List {
                 Section(header: Text(NSLocalizedString("Customize Action Shortcuts", comment: ""))) {
-                    ForEach(LocalAction.allCases) {
-                        action in
+                    ForEach(LocalAction.allCases) { action in
                         HStack {
                             Text(NSLocalizedString(action.rawValue, comment: ""))
-                            Spacer()
+                            Spacer() 
                             
                             Button(action: {
                                 recordingAction = action
@@ -302,9 +310,8 @@ struct ActionShortcutsView: View {
                                         ShortcutRecorderView(isRecording: Binding(
                                             get: { recordingAction == action },
                                             set: { if !$0 { recordingAction = nil } }
-                                        )) { keyCode, modifiers in
-                                            let char = keyChar(from: keyCode)
-                                            onUpdate(action, char, UInt16(keyCode), modifiers)
+                                        )) { event in
+                                            onUpdate(action, event)
                                             recordingAction = nil
                                         }
                                     }
@@ -323,13 +330,6 @@ struct ActionShortcutsView: View {
             }
             .padding()
         }
-    }
-    
-    private func keyChar(from keyCode: UInt32) -> String {
-        if keyCode == 36 { return "↵" }
-        if keyCode == 51 { return "⌫" }
-        if keyCode == 49 { return "Space" }
-        return ""
     }
 }
 
@@ -355,7 +355,7 @@ struct ExcludedPathsView: View {
                                 .truncationMode(.middle)
                                 .help(path)
                             
-                            Spacer()
+                            Spacer() 
                             
                             Button(action: {
                                 storage.unexclude(path: path)
@@ -383,13 +383,13 @@ struct ExcludedPathsView: View {
 // 隐藏的 View，用于监听按键
 struct ShortcutRecorderView: NSViewRepresentable {
     @Binding var isRecording: Bool
-    var onRecord: (UInt32, NSEvent.ModifierFlags) -> Void
+    var onRecord: (NSEvent) -> Void
     
     func makeNSView(context: Context) -> NSView {
         let view = ShortcutRecorderNSView()
         view.onKeyDown = { event in
             if isRecording {
-                onRecord(UInt32(event.keyCode), event.modifierFlags)
+                onRecord(event)
                 return true
             }
             return false
