@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WayPoint - The Smart macOS Path Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', "SF Pro SC","SF Pro Text","SF Pro Icons","PingFang SC", sans-serif; scroll-behavior: smooth; }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); }
+        .hero-gradient { background: radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.1) 0%, rgba(255, 255, 255, 0) 100%); }
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-white text-slate-900 overflow-x-hidden" x-data="app()" x-init="init()" x-cloak>
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 glass border-b border-slate-200">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-location-crosshairs text-blue-600 text-2xl"></i>
+                <span class="text-xl font-bold tracking-tight text-slate-800">WayPoint</span>
+            </div>
+            
+            <div class="hidden md:flex space-x-8 text-sm font-medium text-slate-600">
+                <a href="#features" x-text="t('nav_features')" class="hover:text-blue-600 transition"></a>
+                <a href="#guide" x-text="t('nav_guide')" class="hover:text-blue-600 transition"></a>
+                <a href="https://github.com/wangwenyou/WayPoint" class="hover:text-blue-600 transition underline underline-offset-4" x-text="t('nav_github')"></a>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <!-- Language Switcher -->
+                <div class="relative" x-data="{ open: false }">
+                    <button @click="open = !open" class="text-slate-500 hover:text-blue-600 flex items-center space-x-1 text-sm font-medium transition">
+                        <i class="fa-solid fa-globe"></i>
+                        <span x-text="langs[lang]"></span>
+                    </button>
+                    <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-32 bg-white border border-slate-100 shadow-xl rounded-xl py-2">
+                        <button @click="lang = 'en'; open = false" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 transition">English</button>
+                        <button @click="lang = 'zh'; open = false" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 transition">简体中文</button>
+                        <button @click="lang = 'zht'; open = false" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 transition">繁體中文</button>
+                    </div>
+                </div>
+                <a href="https://github.com/wangwenyou/WayPoint/releases/latest" class="bg-blue-600 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-blue-700 transition shadow-lg shadow-blue-200" x-text="t('nav_download')"></a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="pt-32 pb-20 hero-gradient">
+        <div class="max-w-6xl mx-auto px-6 text-center">
+            <h1 class="text-5xl md:text-7xl font-bold tracking-tighter mb-6 bg-clip-text text-transparent bg-gradient-to-b from-slate-900 to-slate-600" x-html="t('hero_title')"></h1>
+            <p class="text-xl text-slate-500 mb-10 max-w-2xl mx-auto" x-text="t('hero_subtitle')"></p>
+            
+            <div class="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-4 mb-16">
+                <a href="https://github.com/wangwenyou/WayPoint/releases/latest" class="bg-slate-900 text-white px-8 py-4 rounded-2xl text-lg font-bold hover:scale-105 transition shadow-xl" x-text="t('hero_cta')"></a>
+                <div class="text-slate-400 text-sm">
+                    <span x-text="t('current_version') + ': v' + version"></span>
+                </div>
+            </div>
+
+            <div class="relative max-w-5xl mx-auto mt-10 rounded-3xl overflow-hidden shadow-2xl border border-slate-200">
+                <img src="dialog.png" alt="WayPoint Main UI" class="w-full">
+            </div>
+        </div>
+    </header>
+
+    <!-- Efficiency Section -->
+    <section class="py-24 bg-slate-50">
+        <div class="max-w-4xl mx-auto px-6 text-center">
+            <span class="text-blue-600 font-bold tracking-widest text-xs uppercase" x-text="t('eff_tag')"></span>
+            <h2 class="text-4xl font-bold mt-4 mb-12" x-text="t('eff_title')"></h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
+                <template x-for="(step, index) in t('eff_steps')">
+                    <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mb-6 font-bold text-lg" x-text="index + 1"></div>
+                        <h3 class="font-bold mb-2" x-text="step.title"></h3>
+                        <p class="text-slate-500 text-sm" x-text="step.desc"></p>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-24">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold mb-4" x-text="t('feat_title')"></h2>
+                <p class="text-slate-500" x-text="t('feat_subtitle')"></p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                <template x-for="feature in t('feat_items')">
+                    <div class="group">
+                        <div :class="'w-12 h-12 rounded-xl flex items-center justify-center mb-6 transition duration-300 group-hover:text-white ' + feature.color">
+                            <i :class="'fa-solid ' + feature.icon + ' text-xl'"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3" x-text="feature.title"></h3>
+                        <p class="text-slate-500 leading-relaxed text-sm" x-html="feature.desc"></p>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </section>
+
+    <!-- Guide Section -->
+    <section id="guide" class="py-24 bg-slate-900 text-white">
+        <div class="max-w-4xl mx-auto px-6">
+            <h2 class="text-4xl font-bold mb-12 text-center" x-text="t('guide_title')"></h2>
+            <div class="space-y-12">
+                <template x-for="(item, index) in t('guide_steps')">
+                    <div class="flex items-start space-x-6">
+                        <div class="w-10 h-10 border border-slate-700 rounded-full flex items-center justify-center shrink-0" x-text="index + 1"></div>
+                        <div>
+                            <h4 class="text-xl font-bold mb-2" x-text="item.title"></h4>
+                            <p class="text-slate-400" x-html="item.desc"></p>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 border-t border-slate-100">
+        <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
+            <div class="flex items-center space-x-2 text-slate-400 text-xs">
+                <i class="fa-solid fa-location-crosshairs text-xl"></i>
+                <span x-text="t('footer_copy')"></span>
+            </div>
+            <div class="flex space-x-6 text-slate-400">
+                <a href="https://github.com/wangwenyou/WayPoint" class="hover:text-slate-900 transition"><i class="fa-brands fa-github text-xl"></i></a>
+                <a href="mailto:wangwenyou@hotmail.com" class="hover:text-slate-900 transition"><i class="fa-solid fa-envelope text-xl"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function app() {
+            return {
+                lang: 'en',
+                version: '1.0.0',
+                build: 1,
+                langs: { 'en': 'English', 'zh': '简体中文', 'zht': '繁體中文' },
+                init() {
+                    const userLang = navigator.language || navigator.userLanguage;
+                    if (userLang.includes('TW') || userLang.includes('HK') || userLang.includes('MO') || userLang.includes('Hant')) {
+                        this.lang = 'zht';
+                    } else if (userLang.includes('zh')) {
+                        this.lang = 'zh';
+                    }
+                    
+                    fetch('../version.json')
+                        .then(res => res.json())
+                        .then(data => {
+                            this.version = data.version;
+                            this.build = data.build;
+                        })
+                        .catch(e => console.log('Version fetch skipped'));
+                },
+                t(key) {
+                    return this.translations[this.lang][key];
+                },
+                translations: {
+                    en: {
+                        nav_features: 'Features',
+                        nav_guide: 'Guide',
+                        nav_github: 'Source Code',
+                        nav_download: 'Download',
+                        hero_title: 'Jump between folders <br>at the speed of thought.',
+                        hero_subtitle: 'WayPoint is the smart, central hub for your macOS directories. Bridge the gap between CLI efficiency and GUI convenience.',
+                        hero_cta: 'Get WayPoint for macOS',
+                        current_version: 'Current',
+                        eff_tag: 'Extreme Efficiency',
+                        eff_title: 'The Power of Three.',
+                        eff_steps: [
+                            { title: '⌥ + Space', desc: 'Invoke WayPoint instantly from anywhere in your system.' },
+                            { title: 'Type Search', desc: 'Fuzzy match folder names or pick from historical data.' },
+                            { title: 'Enter', desc: 'Jump directly to your destination. Done.' }
+                        ],
+                        feat_title: 'Magic at Your Fingertips.',
+                        feat_subtitle: 'Built for developers and power users who deal with files every day.',
+                        feat_items: [
+                            { title: 'Smart Sync', icon: 'fa-sync', color: 'bg-cyan-50 text-cyan-600 group-hover:bg-cyan-600', desc: 'Automatically tracks active Finder window and clipboard for paths.' },
+                            { title: 'Action Shortcuts', icon: 'fa-terminal', color: 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600', desc: 'Customizable hotkeys to open folders in Terminal, iTerm2, or VS Code.' },
+                            { title: 'Magic Injection', icon: 'fa-syringe', color: 'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600', desc: 'Use ⌘↵ to instantly navigate any system Open/Save dialog to your selected path.' },
+                            { title: 'Autojump Synergy', icon: 'fa-bolt', color: 'bg-blue-50 text-blue-600 group-hover:bg-blue-600', desc: 'WayPoint directly imports your autojump history. Habit inherited.' },
+                            { title: 'Fully Localized', icon: 'fa-earth-asia', color: 'bg-amber-50 text-amber-600 group-hover:bg-amber-600', desc: 'Full support for English, Simplified Chinese, and Traditional Chinese.' },
+                            { title: 'Native Performance', icon: 'fa-microchip', color: 'bg-rose-50 text-rose-600 group-hover:bg-rose-600', desc: 'Built with SwiftUI. Runs natively on both Intel and Apple Silicon Macs.' }
+                        ],
+                        guide_title: 'Getting Started.',
+                        guide_steps: [
+                            { title: 'Download & Install', desc: 'Download the latest WayPoint.app, drag it into your Applications folder, and launch.' },
+                            { title: 'Grant Permissions', desc: 'Allow <strong>Accessibility</strong> in System Settings. Required for path sync and magic injection.' },
+                            { title: 'Start Jumping', desc: 'Press ⌥ Space, type a few letters, and hit Enter.' }
+                        ],
+                        footer_copy: '© 2026 Wang Wenyou. All rights reserved.'
+                    },
+                    zh: {
+                        nav_features: '特性',
+                        nav_guide: '指南',
+                        nav_github: '源代码',
+                        nav_download: '立刻下载',
+                        hero_title: '思维的速度，<br>在目录间瞬间跳转。',
+                        hero_subtitle: 'WayPoint 是 macOS 上的智能路径导航枢纽。消除命令行效率与图形界面操作之间的隔阂。',
+                        hero_cta: '下载 macOS 版 WayPoint',
+                        current_version: '当前版本',
+                        eff_tag: '极致效率',
+                        eff_title: '三次按键的力量。',
+                        eff_steps: [
+                            { title: '⌥ + 空格', desc: '在系统任何位置瞬间唤起 WayPoint。' },
+                            { title: '输入搜索', desc: '模糊匹配文件夹名称，或从历史记录中选择。' },
+                            { title: '回车', desc: '直接跳转到目标目录。完成。' }
+                        ],
+                        feat_title: '指尖上的魔法。',
+                        feat_subtitle: '专为每天需要处理大量文件的开发者和高级用户打造。',
+                        feat_items: [
+                            { title: '智能感知同步', icon: 'fa-sync', color: 'bg-cyan-50 text-cyan-600 group-hover:bg-cyan-600', desc: '自动监听 Finder 窗口和剪贴板中的路径，它懂你想要去哪。' },
+                            { title: '动作快捷键', icon: 'fa-terminal', color: 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600', desc: '可自定义快捷键，一键在终端、iTerm2 或 VS Code 中打开。' },
+                            { title: '神奇路径注入', icon: 'fa-syringe', color: 'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600', desc: '使用 ⌘↵ 将选定路径直接注入任何系统的“打开/保存”对话框。' },
+                            { title: 'Autojump 数据互通', icon: 'fa-bolt', color: 'bg-blue-50 text-blue-600 group-hover:bg-blue-600', desc: '自动导入并兼容 autojump 历史数据，继承您的命令行习惯。' },
+                            { title: '全面国际化', icon: 'fa-earth-asia', color: 'bg-amber-50 text-amber-600 group-hover:bg-amber-600', desc: '完美支持英文、简体中文及繁体中文界面。' },
+                            { title: '原生卓越性能', icon: 'fa-microchip', color: 'bg-rose-50 text-rose-600 group-hover:bg-rose-600', desc: '使用 SwiftUI 构建。原生支持 Intel 和 Apple Silicon 架构。' }
+                        ],
+                        guide_title: '快速上手。',
+                        guide_steps: [
+                            { title: '下载并安装', desc: '下载最新的 WayPoint.app，拖入应用程序文件夹并启动。' },
+                            { title: '授予权限', desc: '在系统设置中允许 <strong>辅助功能</strong> 权限。这是路径同步和注入功能的关键。' },
+                            { title: '开始跳转', desc: '按下 ⌥ 空格，输入几个字母，然后回车。你现在是效率大师了。' }
+                        ],
+                        footer_copy: '© 2026 Wang Wenyou. 保留所有权利。'
+                    },
+                    zht: {
+                        nav_features: '特性',
+                        nav_guide: '指南',
+                        nav_github: '原始碼',
+                        nav_download: '立刻下載',
+                        hero_title: '思維的速度，<br>在目錄間瞬间跳轉。',
+                        hero_subtitle: 'WayPoint 是 macOS 上的智能路徑導航樞纽。消除命令行效率與圖形界面操作之間的隔閡。',
+                        hero_cta: '下載 macOS 版 WayPoint',
+                        current_version: '目前版本',
+                        eff_tag: '極致效率',
+                        eff_title: '三次按鍵的力量。',
+                        eff_steps: [
+                            { title: '⌥ + 空格', desc: '在系統任何位置瞬间喚起 WayPoint。' },
+                            { title: '輸入搜尋', desc: '模糊匹配資料夾名稱，或从歷史記錄中選擇。' },
+                            { title: '回車', desc: '直接跳轉到目標目錄。完成。' }
+                        ],
+                        feat_title: '指尖上的魔法。',
+                        feat_subtitle: '專為每天需要處理大量檔案的開發者和高級用戶打造。',
+                        feat_items: [
+                            { title: '智能感知同步', icon: 'fa-sync', color: 'bg-cyan-50 text-cyan-600 group-hover:bg-cyan-600', desc: '自動監聽 Finder 視窗和剪贴板中的路徑，它懂你想要去哪。' },
+                            { title: '動作快捷鍵', icon: 'fa-terminal', color: 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600', desc: '可自定義快捷鍵，一鍵在終端機、iTerm2 或 VS Code 中打開。' },
+                            { title: '神奇路徑注入', icon: 'fa-syringe', color: 'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600', desc: '使用 ⌘↵ 將選定路徑直接注入任何系統的「打開/保存」對話框。' },
+                            { title: 'Autojump 数据互通', icon: 'fa-bolt', color: 'bg-blue-50 text-blue-600 group-hover:bg-blue-600', desc: '自動導入並兼容 autojump 歷史數據，繼承您的命令行习惯。' },
+                            { title: '全面國際化', icon: 'fa-earth-asia', color: 'bg-amber-50 text-amber-600 group-hover:bg-amber-600', desc: '完美支持英文、简体中文及繁體中文界面。' },
+                            { title: '原生卓越性能', icon: 'fa-microchip', color: 'bg-rose-50 text-rose-600 group-hover:bg-rose-600', desc: '使用 SwiftUI 構建。原生支持 Intel 和 Apple Silicon 架構。' }
+                        ],
+                        guide_title: '快速上手。',
+                        guide_steps: [
+                            { title: '下載並安裝', desc: '下載最新的 WayPoint.app，拖入應用程式資料夾並啟動。' },
+                            { title: '授予權限', desc: '在系統設定中允许 <strong>輔助使用</strong> 權限。這是路徑同步和注入功能的關鍵。' },
+                            { title: '開始跳轉', desc: '按下 ⌥ 空格，輸入几个字母，然後回車。你现在是效率大师了。' }
+                        ],
+                        footer_copy: '© 2026 Wang Wenyou. 保留所有權利。'
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
