@@ -85,6 +85,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc func openRecentItem(_ sender: NSMenuItem) {
         if let path = sender.representedObject as? String {
             PathActionManager.shared.openInFinder(path: path)
+            StorageManager.shared.recordJump(path: path)
             StorageManager.shared.addOrUpdate(path: path, source: .manual)
         }
     }

@@ -62,6 +62,14 @@
 "Download" = "下載更新";
 "Up to Date" = "已是最新";
 "You are using the latest version." = "您目前使用的已是最新版本。";
+"Insights" = "洞察";
+"WayPoint Insights" = "WayPoint 效率洞察";
+"Your productivity dashboard" = "您的生產力儀表板";
+"Jumps Today" = "今日跳轉";
+"Jumps Weekly" = "本周跳轉";
+"Time Saved" = "累計節省時間";
+"Total Jumps" = "總跳轉次數";
+"Top Destination (Weekly)" = "本周最常訪問";
 "Language" = "語言";
 "System Default" = "系統預設";
 "Restart Required" = "需要重啟";

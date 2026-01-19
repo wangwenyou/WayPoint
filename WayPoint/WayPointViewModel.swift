@@ -174,10 +174,12 @@ class WayPointViewModel: ObservableObject {
         switch type {
         case .open:
             StorageManager.shared.addOrUpdate(path: itemToUse.path, source: itemToUse.source)
+            StorageManager.shared.recordJump(path: itemToUse.path)
             PathActionManager.shared.openInFinder(path: itemToUse.path)
             closeWindow()
         case .terminal:
             StorageManager.shared.addOrUpdate(path: itemToUse.path, source: itemToUse.source)
+            StorageManager.shared.recordJump(path: itemToUse.path)
             PathActionManager.shared.openInTerminal(path: itemToUse.path)
             closeWindow()
         case .copy:
@@ -186,6 +188,7 @@ class WayPointViewModel: ObservableObject {
             closeWindow()
         case .inject:
             StorageManager.shared.addOrUpdate(path: itemToUse.path, source: itemToUse.source)
+            StorageManager.shared.recordJump(path: itemToUse.path)
             PathActionManager.shared.injectToDialog(path: itemToUse.path)
             closeWindow()
         case .toggleFavorite:
@@ -195,6 +198,7 @@ class WayPointViewModel: ObservableObject {
             selectedIndex = max(0, min(selectedIndex, filteredItems.count - 1))
         case .editor:
             StorageManager.shared.addOrUpdate(path: itemToUse.path, source: itemToUse.source)
+            StorageManager.shared.recordJump(path: itemToUse.path)
             PathActionManager.shared.openInEditor(path: itemToUse.path)
             closeWindow()
         }

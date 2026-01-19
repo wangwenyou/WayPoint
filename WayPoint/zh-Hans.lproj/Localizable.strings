@@ -63,6 +63,14 @@
 "Download" = "下载更新";
 "Up to Date" = "已是最新";
 "You are using the latest version." = "您当前使用的已是最新版本。";
+"Insights" = "洞察";
+"WayPoint Insights" = "WayPoint 效率洞察";
+"Your productivity dashboard" = "您的生产力仪表盘";
+"Jumps Today" = "今日跳转";
+"Jumps Weekly" = "本周跳转";
+"Time Saved" = "累计节省时间";
+"Total Jumps" = "总跳转次数";
+"Top Destination (Weekly)" = "本周最常访问";
 "Language" = "语言";
 "System Default" = "系统默认";
 "Restart Required" = "需要重启";

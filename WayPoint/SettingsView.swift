@@ -68,7 +68,13 @@ struct SettingsView: View {
                     Label(NSLocalizedString("Exclusions", comment: ""), systemImage: "xmark.bin")
                 }
                 
-                // Tab 4: About & Update
+                // Tab 4: Insights
+                InsightsView()
+                .tabItem {
+                    Label(NSLocalizedString("Insights", comment: ""), systemImage: "chart.bar")
+                }
+                
+                // Tab 5: About & Update
                 AboutSettingsView(updateChecker: updateChecker)
                 .tabItem {
                     Label(NSLocalizedString("About", comment: ""), systemImage: "info.circle")
