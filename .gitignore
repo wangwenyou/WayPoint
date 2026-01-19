@@ -1,0 +1,22 @@
+# Xcode
+#
+# gitignore contributors: checkout the Python file for a list of all helpers.
+
+# Build artifacts
+build/
+DerivedData/
+release_build/
+build_temp/
+build_temp_new/
+
+# User-specific files
+*.xcuserdata
+*.mode1v3
+*.mode2v2
+*.perspectivev3
+xcuserdata/
+
+# Localization
+*.swp
+*.lock
+.DS_Store

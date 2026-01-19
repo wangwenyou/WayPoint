@@ -2,16 +2,19 @@
 //  WayPointApp.swift
 //  WayPoint
 //
-//  Created by 王文友 on 2026/1/15.
+//  Created by wangwenyou on 2026/1/15.
 //
 
 import SwiftUI
 
 @main
 struct WayPointApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        // 使用 Settings 而不是 WindowGroup，这样启动时不会显示窗口
+        Settings {
+            EmptyView()
         }
     }
 }

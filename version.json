@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0",
+  "build": 1,
+  "releaseDate": "2026-01-19",
+  "releaseNotes": {
+    "zh-Hans": "1. 初始版本发布\n2. 支持全局快捷键呼出\n3. 支持 Finder 路径同步与剪贴板监听\n4. 支持 Autojump 数据导入\n5. 支持路径注入到系统对话框",
+    "en": "1. Initial release\n2. Global hotkey support\n3. Finder path sync and clipboard monitoring\n4. Autojump data import support\n5. Path injection to system dialogs"
+  },
+  "downloadUrl": "https://github.com/wangwenyou/WayPoint/releases/latest",
+  "minOSVersion": "13.0"
+}
