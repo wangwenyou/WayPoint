@@ -1,11 +1,9 @@
 {
-  "version": "1.0.0",
-  "build": 1,
-  "releaseDate": "2026-01-19",
+  "version": "1.2.0",
+  "build": 3,
   "releaseNotes": {
-    "zh-Hans": "1. 初始版本发布\n2. 支持全局快捷键呼出\n3. 支持 Finder 路径同步与剪贴板监听\n4. 支持 Autojump 数据导入\n5. 支持路径注入到系统对话框",
-    "en": "1. Initial release\n2. Global hotkey support\n3. Finder path sync and clipboard monitoring\n4. Autojump data import support\n5. Path injection to system dialogs"
+    "en": "Major stability and UX update: Rules now take effect immediately without restart, fixed update check focus issues, completed full i18n support (EN/ZH), and refined the context action icon library.",
+    "zh-Hans": "重大稳定性与体验更新：规则变更现已支持实时生效无需重启，修复了检查更新时的窗口失焦问题，补全了全量国际化支持，并精选了 24 个高价值开发图标库。"
   },
-  "downloadUrl": "https://github.com/wangwenyou/WayPoint/releases/latest",
-  "minOSVersion": "13.0"
+  "downloadUrl": "https://github.com/wangwenyou/WayPoint/releases/latest"
 }

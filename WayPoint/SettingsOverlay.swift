@@ -1,20 +1,9 @@
 import SwiftUI
 
+// 该文件逻辑已整合至 WayPointView 全屏切换中，保持空定义以避免引用错误
 struct SettingsOverlay: View {
     @Binding var showSettings: Bool
-    
     var body: some View {
-        if showSettings {
-            ZStack {
-                Color.black.opacity(0.15)
-                    .onTapGesture { showSettings = false }
-                
-                SettingsView(isPresented: $showSettings)
-                    .transition(.scale(scale: 0.95).combined(with: .opacity))
-                    .shadow(color: Color.black.opacity(0.3), radius: 20)
-            }
-        } else {
-            EmptyView()
-        }
+        EmptyView()
     }
 }

@@ -23,6 +23,9 @@ enum AppLanguage: String, CaseIterable, Identifiable {
 class LanguageManager: ObservableObject {
     static let shared = LanguageManager()
     
+    // 记录应用启动时的初始语言
+    let originalLanguage: AppLanguage
+    
     @Published var currentLanguage: AppLanguage {
         didSet {
             updateLanguage(currentLanguage)
@@ -31,17 +34,26 @@ class LanguageManager: ObservableObject {
     
     private init() {
         let languages = UserDefaults.standard.array(forKey: "AppleLanguages") as? [String]
+        let initial: AppLanguage
+        
         if let preferred = languages?.first {
             if let lang = AppLanguage.allCases.first(where: { $0.rawValue == preferred }) {
-                self.currentLanguage = lang
-                return
+                initial = lang
+            } else if preferred.starts(with: "zh-Hans") {
+                initial = .simplifiedChinese
+            } else if preferred.starts(with: "zh-Hant") {
+                initial = .traditionalChinese
+            } else if preferred.starts(with: "en") {
+                initial = .english
+            } else {
+                initial = .system
             }
-            // 处理 zh-Hans-CN 这种情况
-            if preferred.starts(with: "zh-Hans") { self.currentLanguage = .simplifiedChinese; return }
-            if preferred.starts(with: "zh-Hant") { self.currentLanguage = .traditionalChinese; return }
-            if preferred.starts(with: "en") { self.currentLanguage = .english; return }
+        } else {
+            initial = .system
         }
-        self.currentLanguage = .system
+        
+        self.currentLanguage = initial
+        self.originalLanguage = initial
     }
     
     private func updateLanguage(_ language: AppLanguage) {

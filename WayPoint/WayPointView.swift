@@ -1,41 +1,81 @@
 import SwiftUI
 import Combine
 
-// MARK: - Main View (UI 层)
 struct WayPointView: View {
-    @StateObject var vm = WayPointViewModel()
-    @State private var showSettings = false
+    @ObservedObject var vm: WayPointViewModel
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
-        MainWindowContent(vm: vm, showSettings: $showSettings)
-            .frame(width: 640, height: 480)
-            .background(VisualEffectView(material: .windowBackground, blendingMode: .behindWindow))
-            .cornerRadius(16)
-            .overlay(WindowBorder())
+                ZStack {
+                    // 背景材质
+                    VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
+                        .ignoresSafeArea()
+                    
+                    // Raycast 背景叠加 (浅色模式下应用 #F2F3F5)
+                    if colorScheme == .light {
+                        ColorTheme.raycastGray
+                            .ignoresSafeArea()
+                    }
+                    
+                    VStack(spacing: 0) {                if !vm.showSettings {
+                    MainWindowContent(vm: vm, showSettings: $vm.showSettings)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 1.02)),
+                            removal: .opacity.combined(with: .scale(scale: 0.98))
+                        ))
+                } else {
+                    SettingsView(isPresented: $vm.showSettings, selectedTab: $vm.settingsTab, vm: vm)
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .bottom).combined(with: .opacity),
+                            removal: .move(edge: .bottom).combined(with: .opacity)
+                        ))
+                }
+            }
+            
+            WindowBorder()
+            
+            // 重命名弹窗
+            if vm.renamingItem != nil {
+                RenameDialogView(vm: vm)
+                    .transition(.opacity)
+                    .zIndex(100)
+            }
+        }
+        .frame(width: 720, height: 540)
+        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.window, style: .continuous))
+        .environmentObject(vm)
+        .animation(DesignSystem.Animation.spring, value: vm.showSettings)
     }
 }
 
-private struct MainWindowContent: View {
+struct MainWindowContent: View {
     @ObservedObject var vm: WayPointViewModel
     @Binding var showSettings: Bool
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
         VStack(spacing: 0) {
             TopSearchBar(vm: vm, showSettings: $showSettings)
             
-            Divider().opacity(0.5)
+            Divider()
+                .background(ColorTheme.Border.secondary(colorScheme))
             
             ResultsListView(vm: vm)
             
+            Divider()
+                .background(ColorTheme.Border.secondary(colorScheme))
+            
             BottomBar(vm: vm)
         }
-        .overlay(SettingsOverlay(showSettings: $showSettings))
     }
 }
 
 private struct WindowBorder: View {
+    @Environment(\.colorScheme) var colorScheme
+    
     var body: some View {
-        RoundedRectangle(cornerRadius: 16)
-            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.window, style: .continuous)
+            .stroke(ColorTheme.Border.primary(colorScheme), lineWidth: 1)
+            .ignoresSafeArea()
     }
 }

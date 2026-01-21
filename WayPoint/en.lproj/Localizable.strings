@@ -1,69 +1,66 @@
 "Settings" = "Settings";
 "Done" = "Done";
-"Global Shortcut" = "Global Shortcut";
-"Press to Record" = "Press to Record";
-"Click to record a new shortcut" = "Click to record a new shortcut";
-"Excluded Paths" = "Excluded Paths";
-"No excluded paths" = "No excluded paths";
-"Type Shortcut..." = "Type Shortcut...";
-"Searching File System..." = "Searching File System...";
-"No local matches" = "No local matches";
-"No items found" = "No items found";
-"Press Return ↵ to search File System" = "Press Return ↵ to search File System";
-"Open" = "Open";
-"Paste" = "Paste";
-"Term" = "Term";
-"Fav" = "Fav";
-"Editor" = "Editor";
-"Exclude" = "Exclude";
-"Open in Finder" = "Open in Finder";
-"Paste to Dialog" = "Paste to Dialog";
-"Open in Terminal" = "Open in Terminal";
-"Open in Editor" = "Open in Editor";
-"Copy Path" = "Copy Path";
-"Unfavorite" = "Unfavorite";
-"Favorite" = "Favorite";
-"Exclude from list" = "Exclude from list";
-"Search..." = "Search folders or type a path...";
-
-// Tabs
-"Recent" = "Recent";
-"Favorites" = "Favorites";
-"items" = "items";
-
-// AppDelegate
-"About WayPoint" = "About WayPoint";
-"Show Search Window" = "Show Search Window";
-"Quit" = "Quit";
-"Quickly navigate to your common directories" = "Quickly navigate to your common directories";
-"Shortcut: Option + Space" = "Shortcut: Option + Space";
-"OK" = "OK";
-"Inject" = "Inject";
-"Inject to Dialog" = "Inject to Dialog";
-"Permission Required" = "Permission Required";
-"WayPoint needs Accessibility permissions to inject paths. Please enable it in System Settings." = "WayPoint needs Accessibility permissions to inject paths. Please enable it in System Settings.";
-"Open Settings" = "Open Settings";
-"Cancel" = "Cancel";
-"Action Shortcuts" = "Action Shortcuts";
-"Reset to Defaults" = "Reset to Defaults";
-"Recording..." = "Recording...";
-"Exclude Path" = "Exclude Path";
-"Toggle Favorite" = "Toggle Favorite";
-"About" = "About";
-"Copy Path" = "Copy Path";
 "General" = "General";
 "Shortcuts" = "Shortcuts";
 "Exclusions" = "Exclusions";
-"Main Hotkey to toggle WayPoint" = "Main Hotkey to toggle WayPoint";
-"Customize Action Shortcuts" = "Customize Action Shortcuts";
-"Select a path in search results and press ⌘Delete to exclude it." = "Select a path in search results and press ⌘Delete to exclude it.";
-"Check for Updates" = "Check for Updates";
-"New Version Available" = "New Version Available";
-"Version" = "Version";
-"Download" = "Download";
-"Up to Date" = "Up to Date";
-"You are using the latest version." = "You are using the latest version.";
 "Insights" = "Insights";
+"About" = "About";
+
+// Language
+"Language" = "Language";
+"App Language" = "App Language";
+"System Default" = "System Default";
+"Restart Now" = "Restart Now";
+"Please restart the app to apply language changes." = "Please restart the app to apply language changes.";
+
+// Shortcuts
+"Global Shortcut" = "Global Shortcut";
+"Main Hotkey to toggle WayPoint" = "Main Hotkey to toggle WayPoint";
+"Press to Record" = "Press to Record";
+"Type Shortcut..." = "Type Shortcut...";
+"Click to record a new shortcut" = "Click to record a new shortcut";
+"Customize Action Shortcuts" = "Customize Action Shortcuts";
+"Recording..." = "Recording...";
+"Reset to Defaults" = "Reset to Defaults";
+
+// Preferred Apps
+"Preferred Apps" = "Preferred Apps";
+"Editor" = "Editor";
+"Terminal" = "Terminal";
+
+// Exclusions
+"Excluded Paths" = "Excluded Paths";
+"No excluded paths" = "No excluded paths";
+"Select a path in search results and press ⌘Delete to exclude it." = "Select a path in search results and press ⌘Delete to exclude it.";
+
+// Actions & Tooltips
+"Inject" = "Inject";
+"Inject to Dialog" = "Inject to Dialog";
+"Quick Look Preview" = "Quick Look Preview";
+"Open in Finder" = "Open in Finder";
+"Open in Terminal" = "Open in Terminal";
+"Open in Editor" = "Open in Editor";
+"Copy Path" = "Copy Path";
+"Favorite" = "Favorite";
+"Unfavorite" = "Unfavorite";
+"Exclude Path" = "Exclude Path";
+"Exclude from list" = "Exclude from list";
+"Preview" = "Preview";
+"Fav" = "Fav";
+"Term" = "Term";
+"Set Alias" = "Set Alias";
+"Rename" = "Rename";
+
+// Search & Status
+"Search..." = "Search folders or enter path...";
+"Search Paths..." = "Search Paths...";
+"Searching File System..." = "Searching File System...";
+"No items found" = "No items found";
+"items" = "items";
+"Recent" = "Recent";
+"Favorites" = "Favorites";
+
+// Insights
 "WayPoint Insights" = "WayPoint Insights";
 "Your productivity dashboard" = "Your productivity dashboard";
 "Jumps Today" = "Jumps Today";
@@ -71,8 +68,56 @@
 "Time Saved" = "Time Saved";
 "Total Jumps" = "Total Jumps";
 "Top Destination (Weekly)" = "Top Destination (Weekly)";
-"Language" = "Language";
-"System Default" = "System Default";
-"Restart Required" = "Restart Required";
-"Please restart the app to apply language changes." = "Please restart the app to apply language changes.";
-"Restart Now" = "Restart Now";
+"Average Time Saved per Action" = "Average Time Saved per Action";
+"Estimated Total Time Saved" = "Estimated Total Time Saved";
+"seconds" = "s";
+"minutes" = "m";
+"hours" = "h";
+"days" = "d";
+
+// Rules Engine
+"Rules" = "Rules";
+"View Rule" = "View Rule";
+"Edit Rule" = "Edit Rule";
+"Create Context Rule" = "Create Context Rule";
+"Rule Name / Label" = "Rule Name / Label";
+"e.g. npm start" = "e.g. npm start";
+"Trigger Condition" = "Trigger Condition";
+"If folder contains (e.g. package.json)" = "If folder contains (e.g. package.json)";
+"Action Type" = "Action Type";
+"Run in Terminal" = "Run in Terminal";
+"Open URL" = "Open URL";
+"Shell Command / URL" = "Shell Command / URL";
+"Button Icon (SF Symbol)" = "Button Icon (SF Symbol)";
+"Icon Name" = "Icon Name";
+"Quick Select Icons" = "Quick Select Icons";
+"Add Rule" = "Add Rule";
+"Save Changes" = "Save Changes";
+"Cancel" = "Cancel";
+"Close" = "Close";
+
+// Personality
+"Code" = "Code";
+"Design" = "Design";
+"Clean (Git)" = "Clean (Git)";
+"%lld files changed (Git)" = "%lld files changed (Git)";
+"Modified %@" = "Modified %@";
+
+// About & Update
+"Version" = "Version";
+"Check for Updates" = "Check for Updates";
+"Up to Date" = "Up to Date";
+"You are using the latest version." = "You are using the latest version.";
+"New Version Available" = "New Version Available";
+"Download" = "Download Update";
+"Quickly navigate to your common directories" = "Quickly navigate to your common directories";
+
+// Menu
+"Quit WayPoint" = "Quit WayPoint";
+"Show Search Window" = "Show Search Window";
+"Settings..." = "Settings...";
+
+// Permissions
+"Permission Required" = "Permission Required";
+"WayPoint needs Accessibility permissions to inject paths. Please enable it in System Settings." = "WayPoint needs Accessibility permissions to inject paths. Please enable it in System Settings.";
+"Open Settings" = "Open Settings";

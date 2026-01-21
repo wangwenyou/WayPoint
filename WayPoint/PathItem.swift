@@ -1,32 +1,38 @@
 import Foundation
 
-struct PathItem: Identifiable, Codable, Hashable {
-    var id: UUID = UUID()
+struct PathItem: Identifiable, Codable, Equatable {
+    let id: UUID
     let path: String
-    var alias: String // 文件夹名称，用于显示
-    var visitCount: Int = 1
-    var lastVisitedAt: Date = Date()
-    var isFavorite: Bool = false
-    var source: SourceType
+    var alias: String
+    var visitCount: Int
+    var lastVisitedAt: Date
+    var isFavorite: Bool
+    let source: SourceType
+    
+    // --- 新增：人格属性 ---
+    var tags: [String] = []          // 如 ["Code", "Design", "Project"]
+    var technology: String? = nil    // 如 "Node.js v18.1.0", "Swift", "Python"
+    var statusSummary: String? = nil // 如 "5 files changed (Git)", "Modified 2m ago"
+    var actions: [ContextAction] = [] // 智能上下文动作
     
     enum SourceType: String, Codable {
-        case clipboard
-        case finderHistory
-        case manual
+        case manual, finderHistory, clipboard
     }
     
-    // 计算权重分数 (核心算法)
+    init(id: UUID = UUID(), path: String, alias: String, visitCount: Int = 1, lastVisitedAt: Date = Date(), isFavorite: Bool = false, source: SourceType) {
+        self.id = id
+        self.path = path
+        self.alias = alias
+        self.visitCount = visitCount
+        self.lastVisitedAt = lastVisitedAt
+        self.isFavorite = isFavorite
+        self.source = source
+    }
+    
     var score: Double {
-        if isFavorite { return 1_000_000 } // 收藏永远置顶
-        
-        let timeFactor = -lastVisitedAt.timeIntervalSinceNow // 距离现在的秒数
-        // 简单算法：次数 * 100 - (距离现在的小时数)
-        // 意味着：最近 1 小时访问 1 次，优于 100 小时前访问 1 次
-        return Double(visitCount * 1000) - (timeFactor / 3600.0)
-    }
-    
-    // 用于去重
-    static func == (lhs: PathItem, rhs: PathItem) -> Bool {
-        return lhs.path == rhs.path
+        let timeInterval = Date().timeIntervalSince(lastVisitedAt)
+        let decay = exp(-timeInterval / (3600 * 24 * 7)) // 7天衰减
+        let baseScore = Double(visitCount) * decay
+        return isFavorite ? baseScore + 1000 : baseScore
     }
 }

@@ -6,7 +6,7 @@ struct BottomBar: View {
     var body: some View {
         if vm.filteredItems.indices.contains(vm.selectedIndex) {
             VStack(spacing: 0) {
-                Divider().opacity(0.5)
+                Divider().opacity(0.1)
                 HStack {
                     BottomBarShortcuts()
                     Spacer()
@@ -14,7 +14,6 @@ struct BottomBar: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
-                .background(Color(NSColor.windowBackgroundColor).opacity(0.2))
             }
         } else {
             EmptyView()
@@ -27,11 +26,13 @@ struct BottomBarShortcuts: View {
     
     var body: some View {
         HStack(spacing: 16) {
+            // 使用 LocalizedStringKey 确保翻译生效
             ShortcutLabel(key: shortcutManager.shortcut(for: .inject).displayString, label: "Inject")
             ShortcutLabel(key: shortcutManager.shortcut(for: .editor).displayString, label: "Editor")
             ShortcutLabel(key: shortcutManager.shortcut(for: .terminal).displayString, label: "Term")
             ShortcutLabel(key: shortcutManager.shortcut(for: .toggleFavorite).displayString, label: "Fav")
-            ShortcutLabel(key: shortcutManager.shortcut(for: .exclude).displayString, label: "Exclude")
+            ShortcutLabel(key: shortcutManager.shortcut(for: .preview).displayString, label: "Preview")
+            ShortcutLabel(key: shortcutManager.shortcut(for: .exclude).displayString, label: "Exclude Path")
         }
     }
 }
@@ -42,7 +43,7 @@ struct BottomBarItemCount: View {
         HStack(spacing: 4) {
             Text("\(count)")
                 .fontWeight(.semibold)
-            Text("items")
+            Text(NSLocalizedString("items", comment: ""))
         }
         .font(.system(size: 10))
         .foregroundColor(.secondary.opacity(0.7))

@@ -26,6 +26,8 @@ class UpdateChecker: ObservableObject {
     func checkForUpdates(manual: Bool = false) {
         isChecking = true
         lastError = nil
+        // 关键修复：开始检查前清空之前的更新信息，防止残留导致逻辑判断错误
+        updateAvailable = nil 
         
         URLSession.shared.dataTask(with: checkUrl) { [weak self] data, response, error in
             DispatchQueue.main.async {
@@ -56,18 +58,20 @@ class UpdateChecker: ObservableObject {
             return
         }
         
-        // 简单比较：先比 Version String，再比 Build Number
-        let isVersionNewer = info.version.compare(currentVersion, options: .numeric) == .orderedDescending
-        let isBuildNewer = info.build > currentBuild
+        // 比较版本号：OrderedDescending 表示 info.version (服务器) > currentVersion (本地)
+        let serverVersionIsNewer = info.version.compare(currentVersion, options: .numeric) == .orderedDescending
+        let serverVersionIsSame = info.version.compare(currentVersion, options: .numeric) == .orderedSame
+        let serverBuildIsNewer = info.build > currentBuild
         
-        // 如果 Version 更大，或者 Version 相等但 Build 更大
-        if isVersionNewer || (info.version == currentVersion && isBuildNewer) {
+        // 只有当服务器版本更新，或者版本号相同但服务器 Build 更高时，才提示更新
+        if serverVersionIsNewer || (serverVersionIsSame && serverBuildIsNewer) {
             self.updateAvailable = info
             self.showUpdateAlert = true
         } else {
+            self.updateAvailable = nil
             if manual {
-                self.lastError = nil // No error, just no update
-                self.showUpdateAlert = true // Show "Up to date" alert
+                self.lastError = nil
+                self.showUpdateAlert = true
             }
         }
     }

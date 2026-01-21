@@ -6,14 +6,40 @@
 //
 
 import Cocoa
+import Quartz
 
-// 自定义 NSPanel 子类，允许成为 key window 以接收键盘输入
 class KeyablePanel: NSPanel {
-    override var canBecomeKey: Bool {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+    
+    // 允许预览面板控制
+    override func acceptsPreviewPanelControl(_ panel: QLPreviewPanel!) -> Bool {
         return true
     }
     
-    override var canBecomeMain: Bool {
-        return true
+    override func beginPreviewPanelControl(_ panel: QLPreviewPanel!) {
+        panel.delegate = self
+        panel.dataSource = self
+    }
+    
+    override func endPreviewPanelControl(_ panel: QLPreviewPanel!) {
+        panel.delegate = nil
+        panel.dataSource = nil
+    }
+}
+
+extension KeyablePanel: QLPreviewPanelDataSource, QLPreviewPanelDelegate {
+    func numberOfPreviewItems(in panel: QLPreviewPanel!) -> Int {
+        return AppDelegate.shared?.currentPreviewURL != nil ? 1 : 0
+    }
+    
+    func previewPanel(_ panel: QLPreviewPanel!, previewItemAt index: Int) -> QLPreviewItem! {
+        // 必须返回 NSURL 才能正确响应 QLPreviewItem 协议
+        return AppDelegate.shared?.currentPreviewURL as NSURL?
+    }
+    
+    // 让预览窗口跟随主窗口移动
+    func previewPanel(_ panel: QLPreviewPanel!, sourceFrameOnScreenFor item: QLPreviewItem!) -> NSRect {
+        return self.frame
     }
 }

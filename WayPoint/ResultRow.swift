@@ -1,148 +1,67 @@
 import SwiftUI
 import AppKit
 
-// 快捷键提示组件
-struct ShortcutHint: View {
-    let label: LocalizedStringKey
-    let icon: String
+// MARK: - Components
+
+struct TagBadge: View {
+    let tag: String
+    let isSelected: Bool
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: icon)
-            Text(label)
+        HStack(spacing: 2) {
+            Image(systemName: iconName)
+                .font(.system(size: 7, weight: .medium))
+            Text(NSLocalizedString(tag, comment: ""))
+                .font(.system(size: 8, weight: .medium))
+        }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 1)
+        .background(
+            isSelected ? 
+                Color.white.opacity(0.2) : 
+                ColorTheme.Background.adaptive(colorScheme)
+        )
+        .foregroundColor(
+            isSelected ? 
+                .white : 
+                ColorTheme.Text.mediumContrast(colorScheme)
+        )
+        .cornerRadius(3)
+    }
+    
+    var iconName: String {
+        switch tag {
+        case "Code": return "terminal"
+        case "Design": return "paintbrush"
+        default: return "tag"
         }
     }
 }
 
-// 列表单行视图
-struct ResultRow: View {
-    let item: PathItem
+struct TechBadge: View {
+    let tech: String
     let isSelected: Bool
-    let onAction: (WayPointViewModel.ActionType) -> Void
-    
-    @State private var isHovering = false
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
-        ZStack {
-            HStack(spacing: 12) {
-                // 图标容器 - 借鉴设计，增加背景
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(isSelected ? Color.white.opacity(0.2) : Color.blue.opacity(0.1))
-                        .frame(width: 36, height: 36)
-                    
-                    FileIconView(path: item.path, isFavorite: item.isFavorite, isSelected: isSelected)
-                        .frame(width: 24, height: 24)
-                }
-                
-                // 文件夹名称和路径
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Text(item.alias)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(isSelected ? .white : .primary)
-                        
-                        if item.isFavorite {
-                            Image(systemName: "star.fill")
-                                .font(.system(size: 10))
-                                .foregroundColor(isSelected ? .white : .yellow)
-                        }
-                        
-                        // 权重标识 (微小的数字)
-                        if item.visitCount > 0 {
-                            Text("\(item.visitCount)")
-                                .font(.system(size: 9, weight: .bold, design: .monospaced))
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 1)
-                                .background(isSelected ? Color.white.opacity(0.2) : Color.primary.opacity(0.05))
-                                .cornerRadius(4)
-                                .foregroundColor(isSelected ? .white.opacity(0.7) : .secondary.opacity(0.5))
-                                .help("Frecency Score: \(Int(item.score))")
-                        }
-                    }
-                    
-                    Text(item.path)
-                        .font(.system(size: 11))
-                        .foregroundColor(isSelected ? Color.white.opacity(0.8) : .secondary)
-                        .lineLimit(1)
-                        .truncationMode(.head)
-                }
-                
-                Spacer()
-                
-                // 交互提示 (右侧显示)
-                if isSelected && !isHovering {
-                    HStack(spacing: 6) {
-                        Image(systemName: "command")
-                            .font(.system(size: 10))
-                        Image(systemName: "return")
-                            .font(.system(size: 10))
-                    }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.white.opacity(0.2))
-                    .cornerRadius(4)
-                    .foregroundColor(.white)
-                }
-            }
-            .padding(.vertical, 6)
-            .padding(.horizontal, 12)
+        Text(tech)
+            .font(.system(size: 8, weight: .medium))
+            .padding(.horizontal, 4)
+            .padding(.vertical, 1)
             .background(
-                isSelected 
-                ? Color.blue.opacity(0.9) 
-                : (isHovering ? Color.primary.opacity(0.05) : Color.clear)
+                isSelected ? 
+                    Color.white.opacity(0.2) : 
+                    ColorTheme.Accent.softBlue.opacity(0.1)
             )
-            .cornerRadius(10)
-            
-            // 悬浮工具栏 (当悬停时显示)
-            if isHovering {
-                 HStack {
-                    Spacer()
-                    HStack(spacing: 8) {
-                        ActionButton(icon: "arrowshape.turn.up.right.fill", help: "Inject to Dialog", isSelected: isSelected) { onAction(.inject) }
-                        ActionButton(icon: "arrow.turn.up.left", help: "Open in Finder", isSelected: isSelected) { onAction(.open) }
-                        ActionButton(icon: "t.square", help: "Open in Terminal", isSelected: isSelected) { onAction(.terminal) }
-                        ActionButton(icon: "chevron.left.forwardslash.chevron.right", help: "Open in Editor", isSelected: isSelected) { onAction(.editor) }
-                        ActionButton(icon: "doc.on.doc", help: "Copy Path", isSelected: isSelected) { onAction(.copy) }
-                        ActionButton(icon: item.isFavorite ? "star.slash" : "star", help: item.isFavorite ? "Unfavorite" : "Favorite", isSelected: isSelected) { onAction(.toggleFavorite) }
-                    }
-                    .padding(.trailing, 12)
-                }
-            }
-        }
-        .padding(.horizontal, 8)
-        .contentShape(Rectangle())
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
-                isHovering = hovering
-            }
-        }
+            .foregroundColor(isSelected ? .white : ColorTheme.Accent.blue)
+            .cornerRadius(3)
     }
 }
 
-struct ActionButton: View {
-    let icon: String
-    let help: LocalizedStringKey
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 12))
-                .foregroundColor(isSelected ? .white : .secondary)
-        }
-        .buttonStyle(.plain)
-        .help(Text(help))
-    }
-}
-
-// 真实文件图标组件
 struct FileIconView: View {
     let path: String
-    let isFavorite: Bool
     let isSelected: Bool
-    
     @State private var icon: NSImage?
     
     var body: some View {
@@ -150,17 +69,16 @@ struct FileIconView: View {
             if let icon = icon {
                 Image(nsImage: icon)
                     .resizable()
+                    .renderingMode(.original)
                     .aspectRatio(contentMode: .fit)
             } else {
-                Image(systemName: "folder.fill")
+                Image(systemName: "folder")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .foregroundColor(isSelected ? .white : Color(NSColor.systemBlue))
+                    .foregroundColor(isSelected ? .white : .secondary)
             }
         }
-        .onAppear {
-            loadIcon()
-        }
+        .onAppear { loadIcon() }
     }
     
     private func loadIcon() {
@@ -168,5 +86,205 @@ struct FileIconView: View {
         let icon = NSWorkspace.shared.icon(forFile: url.path)
         icon.size = NSSize(width: 64, height: 64)
         self.icon = icon
+    }
+}
+
+// MARK: - Main Row
+
+struct ResultRow: View {
+    let item: PathItem
+    let isSelected: Bool
+    let onAction: (WayPointViewModel.ActionType) -> Void
+    
+    @Environment(\.colorScheme) var colorScheme
+    @State private var isHovering = false
+    
+    var body: some View {
+        ZStack {
+            HStack(spacing: DesignSystem.Spacing.lg) {
+                // 图标
+                ZStack {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.white.opacity(0.12))
+                            .frame(width: 32, height: 32)
+                    }
+                    
+                    FileIconView(path: item.path, isSelected: isSelected)
+                        .frame(width: 24, height: 24)
+                        .shadow(color: Color.black.opacity(isSelected ? 0.1 : 0.05), radius: 1, y: 1)
+                }
+                .frame(width: 32)
+                
+                // 内容
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text(item.alias)
+                            .font(DesignSystem.Typography.resultTitle)
+                            .foregroundColor(isSelected ? .white : ColorTheme.Text.primary)
+                            .lineLimit(1)
+                        
+                        if item.isFavorite {
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 9))
+                                .foregroundColor(isSelected ? .white.opacity(0.9) : ColorTheme.Accent.yellow)
+                        }
+                        
+                        if let tech = item.technology {
+                            TechBadge(tech: tech, isSelected: isSelected)
+                        }
+                        
+                        ForEach(Array(item.tags.prefix(2)), id: \.self) { tag in
+                            TagBadge(tag: tag, isSelected: isSelected)
+                        }
+                    }
+                    
+                    HStack(spacing: 4) {
+                        Text(item.path)
+                            .font(DesignSystem.Typography.resultSubtitle)
+                            .foregroundColor(isSelected ? .white.opacity(0.7) : ColorTheme.Text.lowContrast(colorScheme))
+                            .lineLimit(1)
+                            .truncationMode(.head)
+                        
+                        if let status = item.statusSummary {
+                            Text("·").foregroundColor(isSelected ? .white.opacity(0.5) : ColorTheme.Text.quaternary)
+                            Text(status)
+                                .font(DesignSystem.Typography.resultSubtitle)
+                                .foregroundColor(isSelected ? .white.opacity(0.8) : ColorTheme.Text.tertiary)
+                        }
+                    }
+                }
+                
+                Spacer()
+                
+                if isSelected && !isHovering {
+                    HStack(spacing: 4) {
+                        Image(systemName: "command").font(.system(size: 9))
+                        Image(systemName: "return").font(.system(size: 9))
+                    }
+                    .foregroundColor(.white.opacity(0.8))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Capsule().fill(Color.white.opacity(0.2)))
+                }
+            }
+            .padding(.horizontal, DesignSystem.Spacing.lg)
+            .padding(.vertical, 8)
+            .background(isSelected ? Color.blue.opacity(0.85) : (isHovering ? ColorTheme.Interactive.hover : Color.clear))
+            .cornerRadius(DesignSystem.CornerRadius.medium)
+            
+            if isHovering {
+                HoverActionToolbar(item: item, isSelected: isSelected, onAction: onAction)
+            }
+        }
+        .onHover { hovering in
+            withAnimation(DesignSystem.Animation.quick) { isHovering = hovering }
+        }
+        .onDrag { NSItemProvider(object: URL(fileURLWithPath: item.path) as NSURL) }
+        .onAppear {
+            // 惰性加载：当行显示时，如果动作列表为空，触发一次分析
+            if item.actions.isEmpty {
+                StorageManager.shared.refreshMetadata(for: item.id)
+            }
+        }
+    }
+}
+
+struct HoverActionToolbar: View {
+    let item: PathItem
+    let isSelected: Bool
+    let onAction: (WayPointViewModel.ActionType) -> Void
+    @Environment(\.colorScheme) var colorScheme
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            // 智能上下文动作
+            ForEach(item.actions, id: \.self) { action in
+                SeamlessActionButton(
+                    icon: action.icon,
+                    help: LocalizedStringKey(action.title),
+                    isSelected: isSelected,
+                    isContextual: true
+                ) {
+                    onAction(.contextAction(action))
+                }
+                // 小分割线
+                Divider().frame(height: 16).padding(.horizontal, 4)
+            }
+            
+            SeamlessActionButton(icon: "arrowshape.turn.up.right.fill", help: "Inject to Dialog", isSelected: isSelected) { onAction(.inject) }
+            
+            SeamlessActionButton(icon: "folder", help: "Open in Finder", isSelected: isSelected) { onAction(.open) }
+            
+            SeamlessActionButton(icon: "eye", help: "Quick Look Preview", isSelected: isSelected) { onAction(.preview) }
+            
+            SeamlessActionButton(icon: "terminal", help: "Open in Terminal", isSelected: isSelected) { onAction(.terminal) }
+            
+            SeamlessActionButton(icon: "chevron.left.forwardslash.chevron.right", help: "Open in Editor", isSelected: isSelected) { onAction(.editor) }
+            
+            SeamlessActionButton(icon: "doc.on.clipboard", help: "Copy Path", isSelected: isSelected) { onAction(.copy) }
+            
+            SeamlessActionButton(icon: item.isFavorite ? "star.fill" : "star", help: item.isFavorite ? "Unfavorite" : "Favorite", isSelected: isSelected) { onAction(.toggleFavorite) }
+            
+            SeamlessActionButton(icon: "eye.slash", help: "Exclude Path", isSelected: isSelected) { onAction(.exclude) }
+            
+            // 分割线
+            Divider()
+                .frame(height: 16)
+                .background(Color.secondary.opacity(0.3))
+                .padding(.horizontal, 4)
+            
+            // 别名设置 (放到最后)
+            SeamlessActionButton(icon: "pencil", help: "Set Alias", isSelected: isSelected) { 
+                onAction(.rename) 
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isSelected ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(.regularMaterial))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(isSelected ? Color.white.opacity(0.2) : Color.clear, lineWidth: 0.5)
+                )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .shadow(color: Color.black.opacity(isSelected ? 0.2 : 0.1), radius: 4, y: 2)
+        .offset(y: -2)
+    }
+}
+
+struct SeamlessActionButton: View {
+    let icon: String
+    let help: LocalizedStringKey
+    let isSelected: Bool
+    var isContextual: Bool = false
+    let action: () -> Void
+    
+    @Environment(\.colorScheme) var colorScheme
+    @State private var isHovering = false
+    
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(foregroundColor)
+                .frame(width: 32, height: 32)
+                .background(isHovering ? hoverColor : Color.clear)
+                .cornerRadius(6)
+        }
+        .buttonStyle(.plain)
+        .help(Text(help))
+        .onHover { isHovering = $0 }
+    }
+    
+    private var foregroundColor: Color {
+        if isSelected { return .white }
+        if isContextual { return Color.orange }
+        return isHovering ? (colorScheme == .dark ? .white : .black) : .secondary
+    }
+    
+    private var hoverColor: Color {
+        if isSelected { return Color.white.opacity(0.2) }
+        return colorScheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.05)
     }
 }
