@@ -32,73 +32,107 @@ class FolderAnalyzer {
     }
     
     func analyze(path: String) async -> AnalysisResult {
-        if let cached = queue.sync(execute: { cache[path] }) { return cached }
+        var normalizedPath = path
+        if normalizedPath.hasSuffix("/") && normalizedPath.count > 1 {
+            normalizedPath.removeLast()
+        }
         
-        let url = URL(fileURLWithPath: path)
+        if let cached = queue.sync(execute: { cache[normalizedPath] }) { return cached }
+        
+        let url = URL(fileURLWithPath: normalizedPath)
         var tags: [String] = []
         var tech: String? = nil
         var status: String? = nil
         var actions: [ContextAction] = []
         
         let fileManager = FileManager.default
-        let rules = StorageManager.shared.contextRules.filter { $0.isEnabled }
+        let storage = StorageManager.shared
         
-        // 1. Git (人格基础分析，仅保留状态和 Tags 检测)
+        // 1. 基础标签分析 (Git)
         let gitURL = url.appendingPathComponent(".git")
         if fileManager.fileExists(atPath: gitURL.path) {
             tags.append("Code")
-            status = getGitStatus(path: path)
         }
         
-        // 2. 执行所有配置好的动态规则
-        for rule in rules {
-            let triggerPath = url.appendingPathComponent(rule.triggerFile).path
-            var matched = false
-            
-            if rule.triggerFile.contains("*") {
-                matched = matchesWildcard(path: path, pattern: rule.triggerFile)
-            } else {
-                matched = fileManager.fileExists(atPath: triggerPath)
-            }
-            
-            if matched {
-                // 如果是 URL 类型，我们需要执行命令获取输出，或者直接处理特殊逻辑
-                if rule.actionType == .url {
-                    if rule.name == "Open Repo" { // 匹配新名称
-                        if let resolvedUrl = getGitRemote(path: path) {
-                            actions.append(ContextAction(type: .gitRemote, title: rule.name, icon: rule.actionIcon, command: resolvedUrl))
-                        }
-                    } else {
-                        // 通用 URL 动作：执行命令，取输出作为 URL
-                        if let output = runCommand("/bin/bash", args: ["-c", "cd \(path) && \(rule.command)"]) {
-                            actions.append(ContextAction(type: .gitRemote, title: rule.name, icon: rule.actionIcon, command: output.trimmingCharacters(in: .whitespacesAndNewlines)))
-                        }
+        // 2. 动态标签检测 + 人格脚本提取 (核心优先级：人格 > 系统)
+        // 确保在这里只执行一个最高优先级的脚本
+        let techRules = storage.techDetectionRules.filter { $0.isEnabled }
+        var scriptExecuted = false
+        
+        for rule in techRules {
+            if matchesAnyWildcard(path: normalizedPath, patterns: rule.triggerFiles) {
+                tech = rule.name
+                tags.append(rule.name)
+                tags.append("Code")
+                
+                // 只有当全局 showVersionNumber 开启且有人格脚本时才执行
+                if StorageManager.shared.showVersionNumber, !scriptExecuted, let script = rule.statusScript, !script.isEmpty {
+                    let comprehensivePath = "export PATH='/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH'"
+                    let envScript = "\(comprehensivePath); cd '\(normalizedPath)' && \(script)"
+                    
+                    if let output = runCommand("/bin/zsh", args: ["-c", envScript]) {
+                        status = output.trimmingCharacters(in: .whitespacesAndNewlines)
+                        scriptExecuted = true // 标记已执行，防止重复
                     }
-                } else {
-                    // 终端命令类型
-                    actions.append(ContextAction(type: .shellCommand, title: rule.name, icon: rule.actionIcon, command: rule.command))
                 }
             }
         }
         
-        // 3. 通用技术栈识别 (用于 Tag 显示)
-        if fileManager.fileExists(atPath: url.appendingPathComponent("package.json").path) { tech = "Node.js" }
-        
-        if status == nil {
-            if let attr = try? fileManager.attributesOfItem(atPath: path),
-               let modDate = attr[.modificationDate] as? Date {
+        // 3. 补充系统状态 (仅当人格脚本没有输出时)
+        if status == nil || status?.isEmpty == true {
+            if fileManager.fileExists(atPath: gitURL.path) {
+                status = getGitStatus(path: normalizedPath)
+            } else if let attr = try? fileManager.attributesOfItem(atPath: normalizedPath),
+                      let modDate = attr[.modificationDate] as? Date {
                 let formatter = RelativeDateTimeFormatter()
                 formatter.unitsStyle = .short
                 status = String(format: NSLocalizedString("Modified %@", comment: ""), formatter.localizedString(for: modDate, relativeTo: Date()))
             }
         }
         
+        // 4. 处理上下文动作
+        let actionRules = storage.contextRules.filter { $0.isEnabled }
+        for rule in actionRules {
+            if matchesAnyWildcard(path: normalizedPath, patterns: rule.triggerFile) {
+                if rule.actionType == .url {
+                    if rule.name == "Open Repo" { 
+                        if let resolvedUrl = getGitRemote(path: normalizedPath) {
+                            actions.append(ContextAction(type: .gitRemote, title: rule.name, icon: rule.actionIcon, command: resolvedUrl))
+                        }
+                    } else {
+                        if let output = runCommand("/bin/zsh", args: ["-c", "cd '\(normalizedPath)' && \(rule.command)"]) {
+                            actions.append(ContextAction(type: .gitRemote, title: rule.name, icon: rule.actionIcon, command: output.trimmingCharacters(in: .whitespacesAndNewlines)))
+                        }
+                    }
+                } else {
+                    actions.append(ContextAction(type: .shellCommand, title: rule.name, icon: rule.actionIcon, command: rule.command))
+                }
+            }
+        }
+        
         let result = AnalysisResult(tags: Array(Set(tags)), technology: tech, statusSummary: status, actions: actions)
-        queue.async(flags: .barrier) { self.cache[path] = result }
+        // 缓存中记录是否为系统信息，UI 渲染时参考
+        queue.async(flags: .barrier) { self.cache[normalizedPath] = result }
         return result
     }
     
-    private func matchesWildcard(path: String, pattern: String) -> Bool {
+    // 支持逗号分隔的多模式匹配 (OR 逻辑)
+    private func matchesAnyWildcard(path: String, patterns: String) -> Bool {
+        let patternList = patterns.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        for pattern in patternList {
+            if matchesSingleWildcard(path: path, pattern: pattern) { return true }
+        }
+        return false
+    }
+    
+    private func matchesSingleWildcard(path: String, pattern: String) -> Bool {
+        // 如果包含路径分隔符，则进行完整路径拼接检查
+        if pattern.contains("/") {
+            let fullPath = (path as NSString).appendingPathComponent(pattern)
+            return FileManager.default.fileExists(atPath: fullPath)
+        }
+        
+        // 否则在当前目录下进行通配符搜索
         guard let files = try? FileManager.default.contentsOfDirectory(atPath: path) else { return false }
         let regexPattern = pattern.replacingOccurrences(of: ".", with: "\\.").replacingOccurrences(of: "*", with: ".*")
         guard let regex = try? NSRegularExpression(pattern: "^\(regexPattern)$", options: .caseInsensitive) else { return false }
@@ -123,7 +157,7 @@ class FolderAnalyzer {
     
     private func runCommand(_ executable: String, args: [String]) -> String? {
         let process = Process(); process.executableURL = URL(fileURLWithPath: executable); process.arguments = args
-        let pipe = Pipe(); process.standardOutput = pipe; process.standardError = Pipe()
+        let pipe = Pipe(); process.standardOutput = pipe; process.standardError = pipe // 合并输出流
         do {
             try process.run(); process.waitUntilExit()
             let data = pipe.fileHandleForReading.readDataToEndOfFile()

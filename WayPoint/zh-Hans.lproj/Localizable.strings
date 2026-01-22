@@ -11,19 +11,55 @@
 "Restart Now" = "立即重启";
 "Global Shortcut" = "全局快捷键";
 "Main Hotkey to toggle WayPoint" = "用于切换 WayPoint 的全局热键";
-"Action Shortcuts" = "操作快捷键";
+"Show Time Saved in Menu Bar" = "在菜单栏显示节省时间";
+"Show Version Number" = "显示版本号";
+"Press to Record" = "点击录制";
+"Type Shortcut..." = "请输入快捷键...";
+"Click to record a new shortcut" = "点击录制新快捷键";
+"Customize Action Shortcuts" = "自定义操作快捷键";
+"Recording..." = "录制中...";
+"Reset to Defaults" = "恢复默认值";
+
+/* Data Management */
+"Data Management" = "数据管理";
+"Import Settings" = "导入设置";
+"Export Settings" = "导出设置";
+
+/* Preferred Apps */
 "Preferred Apps" = "首选应用";
 "Editor" = "编辑器";
 "Terminal" = "终端";
-"Reset to Defaults" = "恢复默认值";
+
+/* Exclusions */
 "Excluded Paths" = "排除路径";
 "No excluded paths" = "没有已排除的路径";
-"Check for Updates" = "检查更新";
-"Version" = "版本";
-"New Version Available" = "新版本可用";
-"Download" = "下载";
-"Up to Date" = "已是最新";
-"You are using the latest version." = "您正在使用最新版本。";
+"Select a path in search results and press ⌘Delete to exclude it." = "在搜索结果中选中路径并按 ⌘Delete 即可将其排除。";
+
+/* Interface */
+"Interface" = "界面";
+"Search Results" = "搜索结果";
+"Show Tags" = "显示标签";
+"Show Scores" = "显示权重";
+"Show Status Info" = "显示状态信息";
+"Floating Toolbar" = "浮动工具栏";
+"Active Actions (Drag to reorder)" = "已启用动作 (拖拽排序)";
+"Add Action..." = "添加动作...";
+"Customize how search results and the toolbar look and behave." = "自定义搜索结果和工具栏的外观及行为。";
+
+/* Scoring / Algorithm */
+"Scoring" = "评分算法";
+"Algorithm Factors" = "算法因子";
+"Frequency Priority" = "访问频率优先";
+"Recency Priority" = "最近访问优先";
+"Context Prediction" = "上下文预测";
+"Path Multipliers" = "路径倍率";
+"Add Path..." = "添加路径...";
+"Multiplier" = "倍率";
+"No custom multipliers" = "暂无自定义倍率";
+"Higher values prioritize most visited paths." = "数值越高，访问次数多的路径排名越靠前。";
+"Higher values make older visits decay faster." = "数值越高，旧的访问记录权重衰减越快（更看重最近访问）。";
+"Weight of the 'Predictor' rules (running apps)." = "'预测规则'（基于运行中的应用）的加权系数。";
+"Fine-tune how WayPoint calculates scores to prioritize the paths you need." = "微调 WayPoint 的评分算法，让您需要的路径排在前面。";
 
 /* Context Actions / Shortcuts */
 "Inject" = "注入";
@@ -50,6 +86,7 @@
 /* Insights & Stats */
 "Recent" = "最近";
 "Favorites" = "收藏";
+"View Insights" = "查看洞察";
 "WayPoint Insights" = "WayPoint 洞察";
 "Your productivity dashboard" = "您的生产力仪表盘";
 "Recent Folders" = "最近访问文件夹";
@@ -70,6 +107,15 @@
 "hours" = "时";
 "days" = "天";
 "Usage Statistics" = "使用统计";
+"Activity Trend" = "活动趋势";
+"Top Actions" = "常用动作";
+"Top Destination" = "最常去目的地";
+"No records yet" = "暂无记录";
+"Finder 跳转" = "Finder 跳转";
+"终端打开" = "终端打开";
+"编辑器打开" = "编辑器打开";
+"复制路径" = "复制路径";
+"路径注入" = "路径注入";
 
 /* Rules Engine */
 "Rules" = "规则";
@@ -98,13 +144,38 @@
 "Cancel" = "取消";
 "Close" = "关闭";
 
+/* Prediction / Predictor */
+"Prediction" = "预测";
+"Prediction Rules" = "预测规则";
+"Add Predictor" = "添加预测规则";
+"Boost paths with specific tags when certain apps are active." = "当特定应用激活时，自动为匹配标签的路径加权。";
+"Add Predictor Rule" = "添加预测规则";
+"Edit Predictor Rule" = "编辑预测规则";
+"App Bundle ID" = "应用 Bundle ID";
+"Select Running App" = "选择运行中的应用";
+"Choose an app..." = "请选择应用...";
+"Target Tag" = "目标标签";
+"Target Tags" = "目标标签 (支持多选)";
+"Score Boost" = "加权分值";
+
+/* Tags & Detection */
+"Tags" = "标签";
+"Tag Detection Rules" = "标签检测规则";
+"Add Tag Rule" = "添加标签规则";
+"Edit Tag Rule" = "编辑标签规则";
+"Tag Name" = "标签名称";
+"Trigger Files (OR logic, comma separated)" = "触发文件 (或逻辑，逗号分隔)";
+"Define how WayPoint identifies project types. Use commas for multiple files (OR logic)." = "定义 WayPoint 如何识别项目类型。使用逗号分隔多个文件（或逻辑）。";
+"Status Script (Optional)" = "状态脚本 (可选)";
+"Global Settings" = "全局设置";
+
 /* Menu & App */
 "Quit" = "退出";
 "Quit WayPoint" = "退出 WayPoint";
 "Set Folder Alias" = "设置文件夹别名";
 "Add an alias to make this folder easier to find." = "设置别名，搜索更快捷。";
 "Set Alias Name" = "别名名称";
-"Show help" = "显示帮助";
+"Show help" = "帮助";
 "Toggle WayPoint" = "切换 WayPoint";
 "Enter path..." = "输入路径...";
 "Clear history" = "清除历史记录";

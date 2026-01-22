@@ -5,12 +5,46 @@ import AppKit
 struct JumpRecord: Codable {
     let path: String
     let timestamp: Date
+    let actionType: String // 如 "Inject", "Terminal", "Editor", "Rule: npm start"
 }
 
 // 提取为全局公共模型
 struct AppOption: Identifiable, Equatable {
     let id: String // BundleID
     let name: String
+}
+
+enum StandardAction: String, CaseIterable, Codable, Identifiable {
+    case inject, open, preview, terminal, editor, copy, toggleFavorite, exclude, rename
+    var id: String { rawValue }
+    
+    var icon: String {
+        switch self {
+        case .inject: return "arrowshape.turn.up.right.fill"
+        case .open: return "folder"
+        case .preview: return "eye"
+        case .terminal: return "terminal"
+        case .editor: return "chevron.left.forwardslash.chevron.right"
+        case .copy: return "doc.on.clipboard"
+        case .toggleFavorite: return "star"
+        case .exclude: return "eye.slash"
+        case .rename: return "pencil"
+        }
+    }
+    
+    var label: String {
+        switch self {
+        case .inject: return NSLocalizedString("Inject to Dialog", comment: "")
+        case .open: return NSLocalizedString("Open in Finder", comment: "")
+        case .preview: return NSLocalizedString("Quick Look Preview", comment: "")
+        case .terminal: return NSLocalizedString("Open in Terminal", comment: "")
+        case .editor: return NSLocalizedString("Open in Editor", comment: "")
+        case .copy: return NSLocalizedString("Copy Path", comment: "")
+        case .toggleFavorite: return NSLocalizedString("Favorite", comment: "")
+        case .exclude: return NSLocalizedString("Exclude Path", comment: "")
+        case .rename: return NSLocalizedString("Set Alias", comment: "")
+        }
+    }
 }
 
 class StorageManager: ObservableObject {
@@ -20,6 +54,8 @@ class StorageManager: ObservableObject {
     @Published var excludedPaths: Set<String> = []
     @Published var jumpHistory: [JumpRecord] = []
     @Published var contextRules: [ContextRule] = [] // 用户自定义规则
+    @Published var predictorRules: [AppContextRule] = [] // 预言家规则
+    @Published var techDetectionRules: [TechDetectionRule] = [] // 智能标签规则
     
     @Published var preferredEditor: String {
         didSet { UserDefaults.standard.set(preferredEditor, forKey: "PreferredEditorV2") }
@@ -33,18 +69,62 @@ class StorageManager: ObservableObject {
     @Published var customTerminalName: String {
         didSet { UserDefaults.standard.set(customTerminalName, forKey: "CustomTerminalName") }
     }
+    @Published var showMenuBarWidget: Bool {
+        didSet { UserDefaults.standard.set(showMenuBarWidget, forKey: "ShowMenuBarWidgetV1") }
+    }
+    @Published var showVersionNumber: Bool {
+        didSet { 
+            UserDefaults.standard.set(showVersionNumber, forKey: "ShowVersionNumberV1")
+            FolderAnalyzer.shared.clearCache()
+            DispatchQueue.main.async {
+                for item in self.items.prefix(30) {
+                    self.refreshMetadata(for: item.id)
+                }
+            }
+        }
+    }
+    
+    // Interface Customization
+    @Published var showResultTags: Bool {
+        didSet { UserDefaults.standard.set(showResultTags, forKey: "ShowResultTags") }
+    }
+    @Published var showResultScore: Bool {
+        didSet { UserDefaults.standard.set(showResultScore, forKey: "ShowResultScore") }
+    }
+    @Published var showResultInfo: Bool {
+        didSet { UserDefaults.standard.set(showResultInfo, forKey: "ShowResultInfo") }
+    }
+    @Published var enabledToolbarActions: [StandardAction] {
+        didSet {
+            if let data = try? JSONEncoder().encode(enabledToolbarActions) {
+                UserDefaults.standard.set(data, forKey: "EnabledToolbarActions")
+            }
+        }
+    }
+    
+    // Scoring Algorithm
+    @Published var weightFrequency: Double {
+        didSet { UserDefaults.standard.set(weightFrequency, forKey: "WeightFreq"); recalculateScores() }
+    }
+    @Published var weightRecency: Double {
+        didSet { UserDefaults.standard.set(weightRecency, forKey: "WeightRecency"); recalculateScores() }
+    }
+    @Published var weightPrediction: Double {
+        didSet { UserDefaults.standard.set(weightPrediction, forKey: "WeightPrediction"); recalculateScores() }
+    }
+    @Published var customPathWeights: [String: Double] = [:] {
+        didSet { saveScoringWeights(); recalculateScores() }
+    }
     
     private let fileURL: URL
     private let excludeURL: URL
     private let historyURL: URL
     private let rulesURL: URL
+    private let predictorRulesURL: URL
+    private let techRulesURL: URL
+    private let scoringWeightsURL: URL
     
     private init() {
-        self.preferredEditor = UserDefaults.standard.string(forKey: "PreferredEditorV2") ?? "com.microsoft.VSCode"
-        self.preferredTerminal = UserDefaults.standard.string(forKey: "PreferredTerminalV2") ?? "dev.warp.Warp-Stable"
-        self.customEditorName = UserDefaults.standard.string(forKey: "CustomEditorName") ?? ""
-        self.customTerminalName = UserDefaults.standard.string(forKey: "CustomTerminalName") ?? ""
-        
         let urls = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
         let appDir = urls[0].appendingPathComponent("WayPoint")
         try? FileManager.default.createDirectory(at: appDir, withIntermediateDirectories: true, attributes: nil)
@@ -53,6 +133,39 @@ class StorageManager: ObservableObject {
         self.excludeURL = appDir.appendingPathComponent("excluded_paths.json")
         self.historyURL = appDir.appendingPathComponent("jump_history.json")
         self.rulesURL = appDir.appendingPathComponent("context_rules.json")
+        self.predictorRulesURL = appDir.appendingPathComponent("predictor_rules.json")
+        self.techRulesURL = appDir.appendingPathComponent("tech_rules.json")
+        self.scoringWeightsURL = appDir.appendingPathComponent("scoring_weights.json")
+
+        self.preferredEditor = UserDefaults.standard.string(forKey: "PreferredEditorV2") ?? "com.microsoft.VSCode"
+        self.preferredTerminal = UserDefaults.standard.string(forKey: "PreferredTerminalV2") ?? "dev.warp.Warp-Stable"
+        self.customEditorName = UserDefaults.standard.string(forKey: "CustomEditorName") ?? ""
+        self.customTerminalName = UserDefaults.standard.string(forKey: "CustomTerminalName") ?? ""
+        self.showMenuBarWidget = UserDefaults.standard.object(forKey: "ShowMenuBarWidgetV1") as? Bool ?? true
+        self.showVersionNumber = UserDefaults.standard.object(forKey: "ShowVersionNumberV1") as? Bool ?? true
+        
+        self.showResultTags = UserDefaults.standard.object(forKey: "ShowResultTags") as? Bool ?? true
+        self.showResultScore = UserDefaults.standard.object(forKey: "ShowResultScore") as? Bool ?? true
+        self.showResultInfo = UserDefaults.standard.object(forKey: "ShowResultInfo") as? Bool ?? true
+        
+        var wFreq = UserDefaults.standard.double(forKey: "WeightFreq")
+        if wFreq == 0 { wFreq = 1.0 }
+        self.weightFrequency = wFreq
+        
+        var wRec = UserDefaults.standard.double(forKey: "WeightRecency")
+        if wRec == 0 { wRec = 1.0 }
+        self.weightRecency = wRec
+        
+        var wPred = UserDefaults.standard.double(forKey: "WeightPrediction")
+        if wPred == 0 && UserDefaults.standard.object(forKey: "WeightPrediction") == nil { wPred = 1.0 }
+        self.weightPrediction = wPred
+        
+        if let data = UserDefaults.standard.data(forKey: "EnabledToolbarActions"),
+           let actions = try? JSONDecoder().decode([StandardAction].self, from: data) {
+            self.enabledToolbarActions = actions
+        } else {
+            self.enabledToolbarActions = StandardAction.allCases
+        }
         
         Task(priority: .userInitiated) { await loadDataAsync() }
     }
@@ -66,6 +179,28 @@ class StorageManager: ObservableObject {
             await MainActor.run { self.contextRules = ContextRule.defaults }
         }
         
+        // 加载预言家规则
+        if let data = try? Data(contentsOf: predictorRulesURL),
+           let decoded = try? JSONDecoder().decode([AppContextRule].self, from: data) {
+            await MainActor.run { self.predictorRules = decoded }
+        } else {
+            await MainActor.run { self.predictorRules = ContextPredictor.defaultRules }
+        }
+        
+        // 加载智能标签规则
+        if let data = try? Data(contentsOf: techRulesURL),
+           let decoded = try? JSONDecoder().decode([TechDetectionRule].self, from: data) {
+            await MainActor.run { self.techDetectionRules = decoded }
+        } else {
+            await MainActor.run { self.techDetectionRules = TechDetectionRule.defaults }
+        }
+        
+        // 加载评分权重字典
+        if let data = try? Data(contentsOf: scoringWeightsURL),
+           let decoded = try? JSONDecoder().decode([String: Double].self, from: data) {
+            await MainActor.run { self.customPathWeights = decoded }
+        }
+        
         if let data = try? Data(contentsOf: excludeURL), let decoded = try? JSONDecoder().decode(Set<String>.self, from: data) {
             await MainActor.run { self.excludedPaths = decoded }
         }
@@ -73,23 +208,88 @@ class StorageManager: ObservableObject {
             await MainActor.run { self.jumpHistory = decoded }
         }
         var loadedItems: [PathItem] = []
-        if let data = try? Data(contentsOf: fileURL), let decoded = try? JSONDecoder().decode([PathItem].self, from: data) {
-            loadedItems = decoded
+        if let data = try? Data(contentsOf: fileURL), var decoded = try? JSONDecoder().decode([PathItem].self, from: data) {
+            // 对现有存量数据进行标准化和去重合并
+            var mergedMap: [String: PathItem] = [:]
+            for var item in decoded {
+                var normalized = item.path
+                if normalized.hasSuffix("/") && normalized.count > 1 { normalized.removeLast() }
+                
+                if let existing = mergedMap[normalized] {
+                    // 合并：保留较高的访问次数，较新的访问时间，以及收藏状态
+                    mergedMap[normalized]!.visitCount = max(existing.visitCount, item.visitCount)
+                    if item.lastVisitedAt > existing.lastVisitedAt {
+                        mergedMap[normalized]!.lastVisitedAt = item.lastVisitedAt
+                    }
+                    if item.isFavorite { mergedMap[normalized]!.isFavorite = true }
+                } else {
+                    mergedMap[normalized] = item
+                }
+            }
+            loadedItems = Array(mergedMap.values)
         }
+        
         let autojumpItems = await parseAutojump()
         for item in autojumpItems {
-            if let index = loadedItems.firstIndex(where: { $0.path == item.path }) {
+            // 确保 autojump 的路径也经过标准化
+            var normalized = item.path
+            if normalized.hasSuffix("/") && normalized.count > 1 { normalized.removeLast() }
+            
+            if let index = loadedItems.firstIndex(where: { 
+                var p = $0.path
+                if p.hasSuffix("/") && p.count > 1 { p.removeLast() }
+                return p == normalized 
+            }) {
                 if item.visitCount > loadedItems[index].visitCount { loadedItems[index].visitCount = item.visitCount }
             } else { loadedItems.append(item) }
         }
-        let finalItems = loadedItems.sorted { $0.score > $1.score }
-        await MainActor.run { self.items = finalItems }
+        let finalItems = loadedItems // sort happens in recalculateScores if needed, but initial sort is good
+        await MainActor.run { 
+            self.items = finalItems 
+            self.recalculateScores()
+        }
+    }
+    
+    func recalculateScores() {
+        // 触发 UI 更新：排序
+        self.items.sort { $0.score > $1.score }
+    }
+    
+    private func saveScoringWeights() {
+        if let encoded = try? JSONEncoder().encode(customPathWeights) { try? encoded.write(to: scoringWeightsURL) }
     }
     
     func resetRulesToDefaults() {
         self.contextRules = ContextRule.defaults
         saveRules()
         FolderAnalyzer.shared.clearCache()
+    }
+    
+    func savePredictorRules() {
+        if let encoded = try? JSONEncoder().encode(predictorRules) { try? encoded.write(to: predictorRulesURL) }
+        FolderAnalyzer.shared.clearCache()
+    }
+    
+    func saveTechRules() {
+        if let encoded = try? JSONEncoder().encode(techDetectionRules) { try? encoded.write(to: techRulesURL) }
+        FolderAnalyzer.shared.clearCache()
+        
+        // 修改即生效：立即重置并刷新内存中的项目信息
+        DispatchQueue.main.async {
+            for i in 0..<self.items.count {
+                self.refreshMetadata(for: self.items[i].id)
+            }
+        }
+    }
+    
+    func resetTechRules() {
+        self.techDetectionRules = TechDetectionRule.defaults
+        saveTechRules()
+    }
+    
+    func resetPredictorRules() {
+        self.predictorRules = ContextPredictor.defaultRules
+        savePredictorRules()
     }
     
     func getEditorDisplayName() -> String {
@@ -100,6 +300,18 @@ class StorageManager: ObservableObject {
     func getTerminalDisplayName() -> String {
         let presets = ["com.googlecode.iterm2": "iTerm2", "dev.warp.Warp-Stable": "Warp", "com.apple.Terminal": "Terminal", "com.github.wez.wezterm": "WezTerm"]
         return presets[preferredTerminal] ?? (customTerminalName.isEmpty ? preferredTerminal : customTerminalName)
+    }
+    
+    var todaySavedSeconds: Int {
+        let calendar = Calendar.current
+        let todayRecords = jumpHistory.filter { calendar.isDateInToday($0.timestamp) }
+        return todayRecords.reduce(0) { sum, record in
+            var weight = 10
+            if record.actionType == "Inject" { weight = 30 }
+            else if record.actionType.hasPrefix("Rule:") { weight = 20 }
+            else if record.actionType == "Open in Editor" || record.actionType == "Open in Terminal" { weight = 15 }
+            return sum + weight
+        }
     }
     
     func saveRules() {
@@ -143,17 +355,26 @@ class StorageManager: ObservableObject {
         return newItems
     }
     
-    func recordJump(path: String) {
-        let record = JumpRecord(path: path, timestamp: Date())
+    func recordJump(path: String, actionType: String) {
+        var normalizedPath = path.trimmingCharacters(in: .whitespacesAndNewlines)
+        if normalizedPath.hasSuffix("/") && normalizedPath.count > 1 {
+            normalizedPath.removeLast()
+        }
+        
+        let record = JumpRecord(path: normalizedPath, timestamp: Date(), actionType: actionType)
         DispatchQueue.main.async {
             self.jumpHistory.append(record)
-            if self.jumpHistory.count > 1000 { self.jumpHistory.removeFirst() }
+            if self.jumpHistory.count > 2000 { self.jumpHistory.removeFirst() }
             self.saveHistory()
         }
     }
     
     func addOrUpdate(path: String, source: PathItem.SourceType) {
-        let cp = path.trimmingCharacters(in: .whitespacesAndNewlines)
+        var cp = path.trimmingCharacters(in: .whitespacesAndNewlines)
+        if cp.hasSuffix("/") && cp.count > 1 {
+            cp.removeLast()
+        }
+        
         if excludedPaths.contains(cp) { return }
         DispatchQueue.main.async {
             let id: UUID
@@ -166,7 +387,7 @@ class StorageManager: ObservableObject {
                 self.items.append(newItem)
                 id = newItem.id
             }
-            self.items.sort { $0.score > $1.score }; self.save(); self.refreshMetadata(for: id)
+            self.recalculateScores(); self.save(); self.refreshMetadata(for: id)
         }
     }
     
@@ -177,6 +398,7 @@ class StorageManager: ObservableObject {
             let result = await FolderAnalyzer.shared.analyze(path: path)
             await MainActor.run {
                 if let idx = self.items.firstIndex(where: { $0.id == id }) {
+                    self.objectWillChange.send() // 强制通知订阅者
                     self.items[idx].tags = result.tags
                     self.items[idx].technology = result.technology
                     self.items[idx].statusSummary = result.statusSummary
@@ -199,7 +421,7 @@ class StorageManager: ObservableObject {
     
     func toggleFavorite(id: UUID) {
         if let index = items.firstIndex(where: { $0.id == id }) {
-            items[index].isFavorite.toggle(); items.sort { $0.score > $1.score }; save()
+            items[index].isFavorite.toggle(); self.recalculateScores(); save()
         }
     }
     
@@ -223,5 +445,101 @@ class StorageManager: ObservableObject {
     
     private func saveHistory() {
         if let encoded = try? JSONEncoder().encode(jumpHistory) { try? encoded.write(to: historyURL) }
+    }
+    
+    // MARK: - Export / Import
+    
+    private struct ExportPayload: Codable {
+        var excludedPaths: Set<String>?
+        var contextRules: [ContextRule]?
+        var predictorRules: [AppContextRule]?
+        var techDetectionRules: [TechDetectionRule]?
+        var enabledToolbarActions: [StandardAction]?
+        var showResultTags: Bool?
+        var showResultScore: Bool?
+        var showResultInfo: Bool?
+        var preferredEditor: String?
+        var preferredTerminal: String?
+        
+        // Scoring
+        var weightFrequency: Double?
+        var weightRecency: Double?
+        var weightPrediction: Double?
+        var customPathWeights: [String: Double]?
+    }
+    
+    func exportSettings() -> URL? {
+        var payload = ExportPayload()
+        
+        if !excludedPaths.isEmpty { payload.excludedPaths = excludedPaths }
+        if contextRules != ContextRule.defaults { payload.contextRules = contextRules }
+        if predictorRules != ContextPredictor.defaultRules { payload.predictorRules = predictorRules }
+        if techDetectionRules != TechDetectionRule.defaults { payload.techDetectionRules = techDetectionRules }
+        if enabledToolbarActions != StandardAction.allCases { payload.enabledToolbarActions = enabledToolbarActions }
+        
+        if showResultTags == false { payload.showResultTags = false }
+        if showResultScore == false { payload.showResultScore = false }
+        if showResultInfo == false { payload.showResultInfo = false }
+        
+        let defaultEditor = "com.microsoft.VSCode"
+        let defaultTerminal = "dev.warp.Warp-Stable"
+        if preferredEditor != defaultEditor { payload.preferredEditor = preferredEditor }
+        if preferredTerminal != defaultTerminal { payload.preferredTerminal = preferredTerminal }
+        
+        if weightFrequency != 1.0 { payload.weightFrequency = weightFrequency }
+        if weightRecency != 1.0 { payload.weightRecency = weightRecency }
+        if weightPrediction != 1.0 { payload.weightPrediction = weightPrediction }
+        if !customPathWeights.isEmpty { payload.customPathWeights = customPathWeights }
+        
+        guard let data = try? JSONEncoder().encode(payload) else { return nil }
+        
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("WayPoint_Settings.json")
+        do {
+            try data.write(to: tempURL)
+            return tempURL
+        } catch {
+            return nil
+        }
+    }
+    
+    func importSettings(from url: URL) -> Bool {
+        guard let data = try? Data(contentsOf: url),
+              let payload = try? JSONDecoder().decode(ExportPayload.self, from: data) else {
+            return false
+        }
+        
+        DispatchQueue.main.async {
+            if let excluded = payload.excludedPaths {
+                self.excludedPaths.formUnion(excluded)
+                self.save()
+            }
+            if let rules = payload.contextRules {
+                self.contextRules = rules
+                self.saveRules()
+            }
+            if let predictors = payload.predictorRules {
+                self.predictorRules = predictors
+                self.savePredictorRules()
+            }
+            if let techs = payload.techDetectionRules {
+                self.techDetectionRules = techs
+                self.saveTechRules()
+            }
+            if let actions = payload.enabledToolbarActions {
+                self.enabledToolbarActions = actions // Property observer handles saving
+            }
+            if let tags = payload.showResultTags { self.showResultTags = tags }
+            if let score = payload.showResultScore { self.showResultScore = score }
+            if let info = payload.showResultInfo { self.showResultInfo = info }
+            if let editor = payload.preferredEditor { self.preferredEditor = editor }
+            if let term = payload.preferredTerminal { self.preferredTerminal = term }
+            
+            // Scoring
+            if let wFreq = payload.weightFrequency { self.weightFrequency = wFreq }
+            if let wRec = payload.weightRecency { self.weightRecency = wRec }
+            if let wPred = payload.weightPrediction { self.weightPrediction = wPred }
+            if let wPaths = payload.customPathWeights { self.customPathWeights = wPaths }
+        }
+        return true
     }
 }

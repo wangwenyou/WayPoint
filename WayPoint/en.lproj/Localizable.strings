@@ -5,6 +5,9 @@
 "Exclusions" = "Exclusions";
 "Insights" = "Insights";
 "About" = "About";
+"Prediction" = "Prediction";
+"Interface" = "Interface";
+"Scoring" = "Scoring";
 
 // Language
 "Language" = "Language";
@@ -16,12 +19,19 @@
 // Shortcuts
 "Global Shortcut" = "Global Shortcut";
 "Main Hotkey to toggle WayPoint" = "Main Hotkey to toggle WayPoint";
+"Show Time Saved in Menu Bar" = "Show Time Saved in Menu Bar";
+"Show Version Number" = "Show Version Number";
 "Press to Record" = "Press to Record";
 "Type Shortcut..." = "Type Shortcut...";
 "Click to record a new shortcut" = "Click to record a new shortcut";
 "Customize Action Shortcuts" = "Customize Action Shortcuts";
 "Recording..." = "Recording...";
 "Reset to Defaults" = "Reset to Defaults";
+
+// Data Management
+"Data Management" = "Data Management";
+"Import Settings" = "Import Settings";
+"Export Settings" = "Export Settings";
 
 // Preferred Apps
 "Preferred Apps" = "Preferred Apps";
@@ -32,6 +42,30 @@
 "Excluded Paths" = "Excluded Paths";
 "No excluded paths" = "No excluded paths";
 "Select a path in search results and press ⌘Delete to exclude it." = "Select a path in search results and press ⌘Delete to exclude it.";
+
+// Interface
+"Search Results" = "Search Results";
+"Show Tags" = "Show Tags";
+"Show Scores" = "Show Scores";
+"Show Status Info" = "Show Status Info";
+"Floating Toolbar" = "Floating Toolbar";
+"Active Actions (Drag to reorder)" = "Active Actions (Drag to reorder)";
+"Add Action..." = "Add Action...";
+"Customize how search results and the toolbar look and behave." = "Customize how search results and the toolbar look and behave.";
+
+// Scoring / Algorithm
+"Algorithm Factors" = "Algorithm Factors";
+"Frequency Priority" = "Frequency Priority";
+"Recency Priority" = "Recency Priority";
+"Context Prediction" = "Context Prediction";
+"Path Multipliers" = "Path Multipliers";
+"Add Path..." = "Add Path...";
+"Multiplier" = "Multiplier";
+"No custom multipliers" = "No custom multipliers";
+"Higher values prioritize most visited paths." = "Higher values prioritize most visited paths.";
+"Higher values make older visits decay faster." = "Higher values make older visits decay faster.";
+"Weight of the 'Predictor' rules (running apps)." = "Weight of the 'Predictor' rules (running apps).";
+"Fine-tune how WayPoint calculates scores to prioritize the paths you need." = "Fine-tune how WayPoint calculates scores to prioritize the paths you need.";
 
 // Actions & Tooltips
 "Inject" = "Inject";
@@ -59,6 +93,7 @@
 "items" = "items";
 "Recent" = "Recent";
 "Favorites" = "Favorites";
+"View Insights" = "View Insights";
 
 // Insights
 "WayPoint Insights" = "WayPoint Insights";
@@ -74,6 +109,10 @@
 "minutes" = "m";
 "hours" = "h";
 "days" = "d";
+"Activity Trend" = "Activity Trend";
+"Top Actions" = "Top Actions";
+"Top Destination" = "Top Destination";
+"No records yet" = "No records yet";
 
 // Rules Engine
 "Rules" = "Rules";
@@ -95,6 +134,33 @@
 "Save Changes" = "Save Changes";
 "Cancel" = "Cancel";
 "Close" = "Close";
+"Restore Defaults" = "Restore Defaults";
+"Built-in" = "Built-in";
+"If folder contains" = "If folder contains";
+"WayPoint will show quick action buttons when these files are detected." = "WayPoint will show quick action buttons when these files are detected.";
+
+// Predictor
+"Prediction Rules" = "Prediction Rules";
+"Add Predictor" = "Add Predictor";
+"Boost paths with specific tags when certain apps are active." = "Boost paths with specific tags when certain apps are active.";
+"Add Predictor Rule" = "Add Predictor Rule";
+"Edit Predictor Rule" = "Edit Predictor Rule";
+"Select Running App" = "Select Running App";
+"Choose an app..." = "Choose an app...";
+"App Bundle ID" = "App Bundle ID";
+"Target Tag" = "Target Tag";
+"Target Tags" = "Target Tags (Multi-select)";
+"Score Boost" = "Score Boost";
+
+// Tags & Detection
+"Tag Detection Rules" = "Tag Detection Rules";
+"Add Tag Rule" = "Add Tag Rule";
+"Edit Tag Rule" = "Edit Tag Rule";
+"Tag Name" = "Tag Name";
+"Trigger Files (OR logic, comma separated)" = "Trigger Files (OR logic, comma separated)";
+"Status Script (Optional)" = "Status Script (Optional)";
+"Define how WayPoint identifies project types. Use commas for multiple files (OR logic)." = "Define how WayPoint identifies project types. Use commas for multiple files (OR logic).";
+"Global Settings" = "Global Settings";
 
 // Personality
 "Code" = "Code";

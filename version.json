@@ -1,9 +1,9 @@
 {
-  "version": "1.2.0",
-  "build": 3,
+  "version": "1.3.0",
+  "build": 4,
   "releaseNotes": {
-    "en": "Major stability and UX update: Rules now take effect immediately without restart, fixed update check focus issues, completed full i18n support (EN/ZH), and refined the context action icon library.",
-    "zh-Hans": "重大稳定性与体验更新：规则变更现已支持实时生效无需重启，修复了检查更新时的窗口失焦问题，补全了全量国际化支持，并精选了 24 个高价值开发图标库。"
+    "en": "WayPoint 1.3.0: The Open Architecture Update. Fully customizable interface (Tags, Scores, Status Info), programmable floating toolbar (reorderable actions), and open scoring algorithm with path multipliers. Includes configuration import/export for portability.",
+    "zh-Hans": "WayPoint 1.3.0: 开放架构体系更新。全面开放界面定制（标签、权重、状态信息）、可编程浮动工具栏（支持动作排序与开关）以及开放评分算法系数与路径倍率。新增配置导入导出，支持跨机同步。"
   },
   "downloadUrl": "https://github.com/wangwenyou/WayPoint/releases/latest"
 }

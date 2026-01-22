@@ -7,7 +7,7 @@ enum LocalAction: String, CaseIterable, Codable, Identifiable {
     case terminal = "Open in Terminal"
     case editor = "Open in Editor"
     case copyPath = "Copy Path"
-    case toggleFavorite = "Toggle Favorite"
+    case toggleFavorite = "Favorite"
     case exclude = "Exclude Path"
     case preview = "Quick Look Preview"
     

@@ -19,7 +19,7 @@ class WayPointViewModel: ObservableObject {
     
     // 判断当前是否处于模态对话框状态
     var isModalActive: Bool {
-        renamingItem != nil || showingAddRule || UpdateChecker.shared.isChecking || UpdateChecker.shared.showUpdateAlert
+        showSettings || renamingItem != nil || showingAddRule || UpdateChecker.shared.isChecking || UpdateChecker.shared.showUpdateAlert
     }
     
     private var storage = StorageManager.shared
@@ -36,9 +36,16 @@ class WayPointViewModel: ObservableObject {
                 let scoredItems: [(item: PathItem, score: Int)] = source.compactMap { item in
                     let aliasScore = FuzzyMatcher.score(query: query, text: item.alias)
                     let pathScore = FuzzyMatcher.score(query: query, text: item.path)
+                    
+                    // 引入“预言家”加分逻辑
+                    let contextBonus = ContextPredictor.shared.calculateBonus(for: item)
+                    
                     if aliasScore > 0 || pathScore > 0 {
-                        let finalScore = max(aliasScore * 2, pathScore)
+                        let finalScore = max(aliasScore * 2, pathScore) + contextBonus
                         return (item, finalScore)
+                    } else if query.isEmpty && contextBonus > 0 {
+                        // 即便没输入，有上下文加分的也优先展示在前 20 名
+                        return (item, contextBonus)
                     }
                     return nil
                 }
@@ -123,15 +130,15 @@ class WayPointViewModel: ObservableObject {
         
         switch type {
         case .open:
-            updateUsage(item); PathActionManager.shared.openInFinder(path: item.path); closeWindow()
+            updateUsage(item, actionType: "Open in Finder"); PathActionManager.shared.openInFinder(path: item.path); closeWindow()
         case .terminal:
-            updateUsage(item); PathActionManager.shared.openInTerminal(path: item.path); closeWindow()
+            updateUsage(item, actionType: "Open in Terminal"); PathActionManager.shared.openInTerminal(path: item.path); closeWindow()
         case .copy:
-            updateUsage(item); PathActionManager.shared.copyPath(path: item.path); closeWindow()
+            updateUsage(item, actionType: "Copy Path"); PathActionManager.shared.copyPath(path: item.path); closeWindow()
         case .inject:
-            updateUsage(item); PathActionManager.shared.injectToDialog(path: item.path); closeWindow()
+            updateUsage(item, actionType: "Inject"); PathActionManager.shared.injectToDialog(path: item.path); closeWindow()
         case .editor:
-            updateUsage(item); PathActionManager.shared.openInEditor(path: item.path); closeWindow()
+            updateUsage(item, actionType: "Open in Editor"); PathActionManager.shared.openInEditor(path: item.path); closeWindow()
         case .toggleFavorite:
             StorageManager.shared.toggleFavorite(id: item.id)
         case .exclude:
@@ -142,6 +149,7 @@ class WayPointViewModel: ObservableObject {
         case .rename:
             startRenaming(item: item)
         case .contextAction(let action):
+            updateUsage(item, actionType: action.title)
             executeContextAction(action, path: item.path)
         }
     }
@@ -161,9 +169,9 @@ class WayPointViewModel: ObservableObject {
         closeWindow()
     }
     
-    private func updateUsage(_ item: PathItem) {
+    private func updateUsage(_ item: PathItem, actionType: String) {
         StorageManager.shared.addOrUpdate(path: item.path, source: item.source)
-        StorageManager.shared.recordJump(path: item.path)
+        StorageManager.shared.recordJump(path: item.path, actionType: actionType)
     }
     
     private func closeWindow() {

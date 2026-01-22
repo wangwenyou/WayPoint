@@ -39,6 +39,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
     
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // 单实例检测：如果已经有另一个实例在运行，则直接退出
+        let bundleID = Bundle.main.bundleIdentifier ?? "wayne.WayPoint"
+        let runningApps = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+        if runningApps.count > 1 {
+            NSApplication.shared.terminate(nil)
+            return
+        }
+        
         NSApp.setActivationPolicy(.accessory)
         setupStatusBar()
         createPanel()
@@ -88,27 +96,50 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc func openRecentItem(_ sender: NSMenuItem) {
         if let path = sender.representedObject as? String {
             PathActionManager.shared.openInFinder(path: path)
-            StorageManager.shared.recordJump(path: path)
+            StorageManager.shared.recordJump(path: path, actionType: "Finder")
             StorageManager.shared.addOrUpdate(path: path, source: .manual)
         }
     }
     
     private func setupStatusBar() {
-        statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusBarItem.button {
             if let image = NSImage(systemSymbolName: "location.circle.fill", accessibilityDescription: "WayPoint") {
                 image.isTemplate = true
                 button.image = image
-            } else { button.title = "WP" }
+                button.imagePosition = .imageLeft
+            }
         }
         statusBarItem.isVisible = true
         statusBarItem.menu = NSMenu()
+        
+        // 启动菜单栏小组件刷新定时器
+        Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { _ in
+            self.updateMenuBarWidget()
+        }
+        updateMenuBarWidget()
+    }
+    
+    private func updateMenuBarWidget() {
+        let storage = StorageManager.shared
+        let seconds = storage.todaySavedSeconds
+        let mins = seconds / 60
+        DispatchQueue.main.async {
+            if let button = self.statusBarItem.button {
+                if storage.showMenuBarWidget && mins > 0 {
+                    button.title = " · \(mins)m"
+                    button.font = .systemFont(ofSize: 10, weight: .bold)
+                } else {
+                    button.title = ""
+                }
+            }
+        }
     }
     
     @objc func showAbout() {
-        // 跳转到设置页面的“关于”标签
+        // 跳转到设置页面的“常规”标签 (tag 0)
         viewModel?.showSettings = true
-        viewModel?.settingsTab = 4 // About 标签的 tag 是 4
+        viewModel?.settingsTab = 0
         openPanel()
     }
     

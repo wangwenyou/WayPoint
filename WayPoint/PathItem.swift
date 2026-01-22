@@ -30,9 +30,33 @@ struct PathItem: Identifiable, Codable, Equatable {
     }
     
     var score: Double {
+        let sm = StorageManager.shared
         let timeInterval = Date().timeIntervalSince(lastVisitedAt)
-        let decay = exp(-timeInterval / (3600 * 24 * 7)) // 7天衰减
-        let baseScore = Double(visitCount) * decay
-        return isFavorite ? baseScore + 1000 : baseScore
+        
+        // 1. Recency: weightRecency > 1 加速衰减 (更看重近期)，< 1 减缓衰减 (更看重长期)
+        // 默认半衰期约 7 天
+        let halfLife = (3600 * 24 * 7) / max(0.1, sm.weightRecency)
+        let decay = exp(-timeInterval / halfLife)
+        
+        // 2. Frequency
+        var finalScore = (Double(visitCount) * sm.weightFrequency) * decay
+        
+        // 3. Favorites (Fixed Bonus)
+        if isFavorite { finalScore += 1000 }
+        
+        // 4. Context Prediction
+        // 注意：这里访问 ContextPredictor 单例，确保其计算开销低
+        let bonus = ContextPredictor.shared.calculateBonus(for: self)
+        finalScore += Double(bonus) * sm.weightPrediction
+        
+        // 5. Custom Path Weights (Multiplier)
+        // 简单的路径前缀匹配
+        for (prefix, multiplier) in sm.customPathWeights {
+            if path.hasPrefix(prefix) {
+                finalScore *= multiplier
+            }
+        }
+        
+        return finalScore
     }
 }

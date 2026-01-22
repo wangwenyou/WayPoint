@@ -4,10 +4,10 @@ import Combine
 struct VersionInfo: Codable {
     let version: String
     let build: Int
-    let releaseDate: String
     let releaseNotes: [String: String]
     let downloadUrl: String
-    let minOSVersion: String
+    let releaseDate: String?
+    let minOSVersion: String?
 }
 
 class UpdateChecker: ObservableObject {

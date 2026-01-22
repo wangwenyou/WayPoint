@@ -96,6 +96,7 @@ struct ResultRow: View {
     let isSelected: Bool
     let onAction: (WayPointViewModel.ActionType) -> Void
     
+    @ObservedObject var storage = StorageManager.shared
     @Environment(\.colorScheme) var colorScheme
     @State private var isHovering = false
     
@@ -124,18 +125,47 @@ struct ResultRow: View {
                             .foregroundColor(isSelected ? .white : ColorTheme.Text.primary)
                             .lineLimit(1)
                         
+                        // 显示得分 (权重) - 仅显示整数部分
+                        if storage.showResultScore {
+                            Text("\(Int(item.score))")
+                                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 1)
+                                .background(isSelected ? Color.white.opacity(0.2) : Color.primary.opacity(0.05))
+                                .foregroundColor(isSelected ? .white.opacity(0.8) : .secondary.opacity(0.6))
+                                .cornerRadius(3)
+                        }
+                        
                         if item.isFavorite {
                             Image(systemName: "star.fill")
                                 .font(.system(size: 9))
                                 .foregroundColor(isSelected ? .white.opacity(0.9) : ColorTheme.Accent.yellow)
                         }
                         
-                        if let tech = item.technology {
-                            TechBadge(tech: tech, isSelected: isSelected)
+                        if storage.showResultTags {
+                            if let tech = item.technology {
+                                TechBadge(tech: tech, isSelected: isSelected)
+                            }
+                            
+                            // 去重：只显示不与 technology 重复的标签
+                            ForEach(item.tags.filter { $0 != item.technology }.prefix(2), id: \.self) { tag in
+                                TagBadge(tag: tag, isSelected: isSelected)
+                            }
                         }
                         
-                        ForEach(Array(item.tags.prefix(2)), id: \.self) { tag in
-                            TagBadge(tag: tag, isSelected: isSelected)
+                        // 精细化状态显示：区分系统时间与脚本输出
+                        if storage.showResultInfo, let status = item.statusSummary {
+                            // 鲁棒性更强的系统状态判定：只要包含数字和时间单位，通常就是“修改于...”
+                            let timeKeywords = ["ago", "前", "Modified", "修改"]
+                            let isSystemStatus = timeKeywords.contains { status.contains($0) } || status.contains("Git")
+                            
+                            Text(isSystemStatus ? "· \(status)" : status)
+                                .font(.system(size: 9, weight: isSystemStatus ? .regular : .bold, design: .monospaced))
+                                .foregroundColor(isSelected ? .white.opacity(0.8) : (isSystemStatus ? Color.secondary.opacity(0.7) : .blue))
+                                .padding(.horizontal, isSystemStatus ? 0 : 4)
+                                .padding(.vertical, 1)
+                                .background(isSystemStatus ? Color.clear : (isSelected ? Color.white.opacity(0.2) : Color.blue.opacity(0.05)))
+                                .cornerRadius(3)
                         }
                     }
                     
@@ -145,13 +175,6 @@ struct ResultRow: View {
                             .foregroundColor(isSelected ? .white.opacity(0.7) : ColorTheme.Text.lowContrast(colorScheme))
                             .lineLimit(1)
                             .truncationMode(.head)
-                        
-                        if let status = item.statusSummary {
-                            Text("·").foregroundColor(isSelected ? .white.opacity(0.5) : ColorTheme.Text.quaternary)
-                            Text(status)
-                                .font(DesignSystem.Typography.resultSubtitle)
-                                .foregroundColor(isSelected ? .white.opacity(0.8) : ColorTheme.Text.tertiary)
-                        }
                     }
                 }
                 
@@ -182,8 +205,8 @@ struct ResultRow: View {
         }
         .onDrag { NSItemProvider(object: URL(fileURLWithPath: item.path) as NSURL) }
         .onAppear {
-            // 惰性加载：当行显示时，如果动作列表为空，触发一次分析
-            if item.actions.isEmpty {
+            // 只要没有状态摘要，就尝试刷新（解决 actions 非空导致不刷新的问题）
+            if item.statusSummary == nil {
                 StorageManager.shared.refreshMetadata(for: item.id)
             }
         }
@@ -194,6 +217,7 @@ struct HoverActionToolbar: View {
     let item: PathItem
     let isSelected: Bool
     let onAction: (WayPointViewModel.ActionType) -> Void
+    @ObservedObject var storage = StorageManager.shared
     @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
@@ -212,31 +236,15 @@ struct HoverActionToolbar: View {
                 Divider().frame(height: 16).padding(.horizontal, 4)
             }
             
-            SeamlessActionButton(icon: "arrowshape.turn.up.right.fill", help: "Inject to Dialog", isSelected: isSelected) { onAction(.inject) }
-            
-            SeamlessActionButton(icon: "folder", help: "Open in Finder", isSelected: isSelected) { onAction(.open) }
-            
-            SeamlessActionButton(icon: "eye", help: "Quick Look Preview", isSelected: isSelected) { onAction(.preview) }
-            
-            SeamlessActionButton(icon: "terminal", help: "Open in Terminal", isSelected: isSelected) { onAction(.terminal) }
-            
-            SeamlessActionButton(icon: "chevron.left.forwardslash.chevron.right", help: "Open in Editor", isSelected: isSelected) { onAction(.editor) }
-            
-            SeamlessActionButton(icon: "doc.on.clipboard", help: "Copy Path", isSelected: isSelected) { onAction(.copy) }
-            
-            SeamlessActionButton(icon: item.isFavorite ? "star.fill" : "star", help: item.isFavorite ? "Unfavorite" : "Favorite", isSelected: isSelected) { onAction(.toggleFavorite) }
-            
-            SeamlessActionButton(icon: "eye.slash", help: "Exclude Path", isSelected: isSelected) { onAction(.exclude) }
-            
-            // 分割线
-            Divider()
-                .frame(height: 16)
-                .background(Color.secondary.opacity(0.3))
-                .padding(.horizontal, 4)
-            
-            // 别名设置 (放到最后)
-            SeamlessActionButton(icon: "pencil", help: "Set Alias", isSelected: isSelected) { 
-                onAction(.rename) 
+            // 可配置的标准动作
+            ForEach(storage.enabledToolbarActions) { actionType in
+                SeamlessActionButton(
+                    icon: actionType.icon,
+                    help: LocalizedStringKey(actionType.label),
+                    isSelected: isSelected
+                ) {
+                    triggerStandardAction(actionType)
+                }
             }
         }
         .background(
@@ -250,6 +258,20 @@ struct HoverActionToolbar: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .shadow(color: Color.black.opacity(isSelected ? 0.2 : 0.1), radius: 4, y: 2)
         .offset(y: -2)
+    }
+    
+    private func triggerStandardAction(_ type: StandardAction) {
+        switch type {
+        case .inject: onAction(.inject)
+        case .open: onAction(.open)
+        case .preview: onAction(.preview)
+        case .terminal: onAction(.terminal)
+        case .editor: onAction(.editor)
+        case .copy: onAction(.copy)
+        case .toggleFavorite: onAction(.toggleFavorite)
+        case .exclude: onAction(.exclude)
+        case .rename: onAction(.rename)
+        }
     }
 }
 
