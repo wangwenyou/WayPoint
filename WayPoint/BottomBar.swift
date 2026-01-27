@@ -36,7 +36,7 @@ struct InsightsEntryButton: View {
         Button(action: {
             withAnimation(DesignSystem.Animation.spring) {
                 vm.showSettings = true
-                vm.settingsTab = 7 // Insights 标签的 tag 是 7
+                vm.settingsTab = 8 // Insights 标签的 tag 现在是 8 (Scoring 是 7)
             }
         }) {
             HStack(spacing: 6) {
@@ -72,12 +72,14 @@ struct BottomBarShortcuts: View {
     var body: some View {
         HStack(spacing: 16) {
             // 使用 LocalizedStringKey 确保翻译生效
+            ShortcutLabel(key: "← / →", label: "Tabs")
             ShortcutLabel(key: shortcutManager.shortcut(for: .inject).displayString, label: "Inject")
             ShortcutLabel(key: shortcutManager.shortcut(for: .editor).displayString, label: "Editor")
             ShortcutLabel(key: shortcutManager.shortcut(for: .terminal).displayString, label: "Term")
             ShortcutLabel(key: shortcutManager.shortcut(for: .toggleFavorite).displayString, label: "Fav")
             ShortcutLabel(key: shortcutManager.shortcut(for: .preview).displayString, label: "Preview")
-            ShortcutLabel(key: shortcutManager.shortcut(for: .exclude).displayString, label: "Exclude Path")
+            ShortcutLabel(key: shortcutManager.shortcut(for: .exclude).displayString, label: "Exclude")
+            ShortcutLabel(key: "⌘I", label: "Details")
         }
     }
 }

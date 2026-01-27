@@ -50,12 +50,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSApp.setActivationPolicy(.accessory)
         setupStatusBar()
         createPanel()
-        FinderObserver.shared.start()
+        
+        // 性能优化：延迟启动 FinderObserver，避免阻塞启动流程
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            FinderObserver.shared.start()
+        }
+        
         HotKeyManager.shared.register()
         HotKeyManager.shared.onHotKeyTriggered = { [weak self] in
             DispatchQueue.main.async { self?.togglePanel() }
         }
         setupMenuSubscription()
+        LaunchAtLoginManager.shared.updateStatus()
     }
     
     private func setupMenuSubscription() {

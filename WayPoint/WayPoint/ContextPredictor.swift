@@ -12,6 +12,11 @@ struct AppContextRule: Codable, Identifiable, Equatable {
 class ContextPredictor {
     static let shared = ContextPredictor()
     
+    // 性能优化：缓存当前应用的规则
+    private var cachedBundleId: String?
+    private var cachedRules: [AppContextRule] = []
+    private var lastUpdate: Date = .distantPast
+    
     static let defaultRules: [AppContextRule] = [
         AppContextRule(bundleId: "com.apple.dt.Xcode", targetTags: ["Code", "Swift"], boost: 500),
         AppContextRule(bundleId: "com.microsoft.VSCode", targetTags: ["Code", "Python", "Java", "Rust", "Go"], boost: 500),
@@ -24,22 +29,31 @@ class ContextPredictor {
     
     func calculateBonus(for item: PathItem) -> Int {
         var totalBonus = 0
-        let rules = StorageManager.shared.predictorRules.filter { $0.isEnabled }
         
-        // 1. 基于当前激活应用的预测
-        if let frontApp = NSWorkspace.shared.frontmostApplication,
-           let bundleId = frontApp.bundleIdentifier {
-            
-            for rule in rules {
-                if bundleId == rule.bundleId {
-                    // 只要文件夹的标签命中该应用关联的任一标签，即加分
-                    let hasMatch = item.technology != nil && rule.targetTags.contains(item.technology!) ||
-                                   item.tags.contains { rule.targetTags.contains($0) }
-                    
-                    if hasMatch {
-                        totalBonus += rule.boost
-                    }
+        // 1. 基于当前激活应用的预测 (带缓存优化)
+        let now = Date()
+        if now.timeIntervalSince(lastUpdate) > 1.0 {
+            // 每秒最多更新一次缓存
+            if let frontApp = NSWorkspace.shared.frontmostApplication,
+               let bundleId = frontApp.bundleIdentifier {
+                cachedBundleId = bundleId
+                cachedRules = StorageManager.shared.predictorRules.filter { 
+                    $0.isEnabled && $0.bundleId == bundleId 
                 }
+            } else {
+                cachedBundleId = nil
+                cachedRules = []
+            }
+            lastUpdate = now
+        }
+        
+        // 使用缓存的规则进行匹配
+        for rule in cachedRules {
+            let hasMatch = item.technology != nil && rule.targetTags.contains(item.technology!) ||
+                           item.tags.contains { rule.targetTags.contains($0) }
+            
+            if hasMatch {
+                totalBonus += rule.boost
             }
         }
         

@@ -9,6 +9,12 @@
 "App Language" = "应用语言";
 "Please restart the app to apply language changes." = "请重启应用以使语言更改生效。";
 "Restart Now" = "立即重启";
+"App Appearance" = "外观模式";
+"Appearance" = "外观";
+"System" = "跟随系统";
+"System Default" = "跟随系统";
+"Light" = "明亮";
+"Dark" = "暗黑";
 "Global Shortcut" = "全局快捷键";
 "Main Hotkey to toggle WayPoint" = "用于切换 WayPoint 的全局热键";
 "Show Time Saved in Menu Bar" = "在菜单栏显示节省时间";
@@ -19,6 +25,12 @@
 "Customize Action Shortcuts" = "自定义操作快捷键";
 "Recording..." = "录制中...";
 "Reset to Defaults" = "恢复默认值";
+"Action Shortcuts" = "操作快捷键";
+"Startup" = "启动";
+"Launch at Login" = "登录时自启动";
+"Launch Arguments" = "启动参数";
+"e.g. --minimized" = "例如：--minimized";
+"These arguments will be processed whenever the app starts." = "这些参数将在应用启动时被处理。";
 
 /* Data Management */
 "Data Management" = "数据管理";
@@ -29,6 +41,7 @@
 "Preferred Apps" = "首选应用";
 "Editor" = "编辑器";
 "Terminal" = "终端";
+"Choose..." = "选择...";
 
 /* Exclusions */
 "Excluded Paths" = "排除路径";
@@ -37,6 +50,13 @@
 
 /* Interface */
 "Interface" = "界面";
+"Location" = "位置";
+"Status" = "状态";
+"Usage" = "使用统计";
+"Visits" = "访问次数";
+"Score" = "评分";
+"Context Actions" = "上下文操作";
+"Click to open in Finder" = "点击在 Finder 中打开";
 "Search Results" = "搜索结果";
 "Show Tags" = "显示标签";
 "Show Scores" = "显示权重";
@@ -74,6 +94,9 @@
 "Exclude Path" = "排除路径";
 "Exclude from list" = "从列表中排除";
 "Preview" = "预览";
+"Details" = "详情";
+"Tabs" = "标签页";
+"Exclude" = "排除";
 "Fav" = "收藏";
 "Term" = "终端";
 "Set Alias" = "设置别名";
@@ -84,13 +107,18 @@
 "Add to Exclusions" = "添加到排除项";
 
 /* Insights & Stats */
-"Recent" = "最近";
+"Focus" = "焦点";
 "Favorites" = "收藏";
+"History" = "足迹";
+"Today" = "今天";
+"Yesterday" = "昨天";
+"This Week" = "本周";
+"Earlier" = "更早";
 "View Insights" = "查看洞察";
 "WayPoint Insights" = "WayPoint 洞察";
 "Your productivity dashboard" = "您的生产力仪表盘";
-"Recent Folders" = "最近访问文件夹";
-"No recent folders found." = "未发现访问记录。";
+"Focus Folders" = "焦点文件夹";
+"No focus folders found." = "暂无焦点文件夹记录。";
 "Ranked by access frequency" = "按访问频率排序";
 "Jumps Today" = "今日跳转";
 "Jumps Weekly" = "本周跳转";
@@ -199,3 +227,12 @@
 "WayPoint needs Accessibility permissions to inject paths. Please enable it in System Settings." = "WayPoint 需要辅助功能权限来注入路径。请在系统设置中启用它。";
 "Open Settings" = "打开设置";
 "items" = "个项目";
+
+// About & Update
+"Version" = "版本";
+"Check for Updates" = "检查更新";
+"Up to Date" = "已是最新版本";
+"You are using the latest version." = "您正在使用最新版本。";
+"New Version Available" = "发现新版本";
+"Download" = "下载更新";
+"Quickly navigate to your common directories" = "快速访问您的常用目录";

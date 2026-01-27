@@ -5,22 +5,28 @@ struct ColorTheme {
     
     struct Background {
         static func adaptive(_ scheme: ColorScheme) -> Color {
-            scheme == .dark ? Color(white: 0.15) : Color.white
+            // 暗黑模式使用更加深邃的配色，明亮模式维持纯净的 Raycast 灰
+            scheme == .dark ? Color(white: 0.11) : raycastGray
+        }
+        
+        static func secondary(_ scheme: ColorScheme) -> Color {
+            scheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.03)
         }
     }
     
     struct Text {
         static let primary = Color.primary
         static let secondary = Color.secondary
-        static let tertiary = Color.secondary.opacity(0.7)
-        static let quaternary = Color.secondary.opacity(0.4)
+        static func tertiary(_ scheme: ColorScheme) -> Color {
+            scheme == .dark ? Color.white.opacity(0.5) : Color.black.opacity(0.4)
+        }
         
         static func mediumContrast(_ scheme: ColorScheme) -> Color {
-            scheme == .dark ? Color(white: 0.7) : Color(white: 0.4)
+            scheme == .dark ? Color(white: 0.75) : Color(white: 0.35)
         }
         
         static func lowContrast(_ scheme: ColorScheme) -> Color {
-            scheme == .dark ? Color(white: 0.4) : Color(white: 0.7)
+            scheme == .dark ? Color(white: 0.45) : Color(white: 0.65)
         }
     }
     
@@ -28,29 +34,26 @@ struct ColorTheme {
         static let blue = Color.blue
         static let softBlue = Color.blue.opacity(0.7)
         static let orange = Color.orange
-        static let softOrange = Color.orange.opacity(0.7)
-        static let green = Color.green
-        static let softGreen = Color.green.opacity(0.7)
         static let yellow = Color.yellow
+        static let green = Color.green
         static let purple = Color.purple
     }
     
     struct Border {
         static func primary(_ scheme: ColorScheme) -> Color {
-            Color.primary.opacity(scheme == .dark ? 0.2 : 0.1)
+            // 暗黑模式下边框更细微
+            Color.primary.opacity(scheme == .dark ? 0.12 : 0.08)
         }
         static func secondary(_ scheme: ColorScheme) -> Color {
-            Color.primary.opacity(0.05)
+            Color.primary.opacity(scheme == .dark ? 0.06 : 0.04)
         }
     }
     
     struct Interactive {
-        static let hover = Color.primary.opacity(0.08)
+        static func hover(_ scheme: ColorScheme) -> Color {
+            scheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.05)
+        }
     }
-    
-    static var backgroundColor: Color { Color(NSColor.windowBackgroundColor) }
-    static var secondaryBackgroundColor: Color { Color.primary.opacity(0.05) }
-    static var accentColor: Color { Color.blue }
 }
 
 extension Color {

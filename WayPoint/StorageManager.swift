@@ -2,13 +2,43 @@ import Foundation
 import Combine
 import AppKit
 
-struct JumpRecord: Codable {
+struct JumpRecord: Codable, Identifiable {
+    var id: UUID = UUID()
     let path: String
-    let timestamp: Date
+    var timestamp: Date
     let actionType: String // 如 "Inject", "Terminal", "Editor", "Rule: npm start"
+    
+    enum CodingKeys: String, CodingKey {
+        case path, timestamp, actionType
+    }
+    
+    init(path: String, timestamp: Date, actionType: String) {
+        self.path = path
+        self.timestamp = timestamp
+        self.actionType = actionType
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        path = try container.decode(String.self, forKey: .path)
+        timestamp = try container.decode(Date.self, forKey: .timestamp)
+        actionType = try container.decode(String.self, forKey: .actionType)
+        id = UUID()
+    }
 }
 
 // 提取为全局公共模型
+enum AppAppearance: String, CaseIterable, Identifiable {
+    case system, light, dark
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .system: return NSLocalizedString("System", comment: "")
+        case .light: return NSLocalizedString("Light", comment: "")
+        case .dark: return NSLocalizedString("Dark", comment: "")
+        }
+    }
+}
 struct AppOption: Identifiable, Equatable {
     let id: String // BundleID
     let name: String
@@ -83,6 +113,12 @@ class StorageManager: ObservableObject {
             }
         }
     }
+    @Published var launchAtLogin: Bool {
+        didSet { 
+            UserDefaults.standard.set(launchAtLogin, forKey: "LaunchAtLogin")
+            LaunchAtLoginManager.shared.updateStatus()
+        }
+    }
     
     // Interface Customization
     @Published var showResultTags: Bool {
@@ -100,6 +136,9 @@ class StorageManager: ObservableObject {
                 UserDefaults.standard.set(data, forKey: "EnabledToolbarActions")
             }
         }
+    }
+    @Published var appAppearance: AppAppearance {
+        didSet { UserDefaults.standard.set(appAppearance.rawValue, forKey: "AppAppearance") }
     }
     
     // Scoring Algorithm
@@ -143,10 +182,14 @@ class StorageManager: ObservableObject {
         self.customTerminalName = UserDefaults.standard.string(forKey: "CustomTerminalName") ?? ""
         self.showMenuBarWidget = UserDefaults.standard.object(forKey: "ShowMenuBarWidgetV1") as? Bool ?? true
         self.showVersionNumber = UserDefaults.standard.object(forKey: "ShowVersionNumberV1") as? Bool ?? true
+        self.launchAtLogin = UserDefaults.standard.bool(forKey: "LaunchAtLogin")
         
         self.showResultTags = UserDefaults.standard.object(forKey: "ShowResultTags") as? Bool ?? true
         self.showResultScore = UserDefaults.standard.object(forKey: "ShowResultScore") as? Bool ?? true
         self.showResultInfo = UserDefaults.standard.object(forKey: "ShowResultInfo") as? Bool ?? true
+        
+        let appearanceRaw = UserDefaults.standard.string(forKey: "AppAppearance") ?? "system"
+        self.appAppearance = AppAppearance(rawValue: appearanceRaw) ?? .system
         
         var wFreq = UserDefaults.standard.double(forKey: "WeightFreq")
         if wFreq == 0 { wFreq = 1.0 }
@@ -167,11 +210,16 @@ class StorageManager: ObservableObject {
             self.enabledToolbarActions = StandardAction.allCases
         }
         
-        Task(priority: .userInitiated) { await loadDataAsync() }
+        // 性能优化：快速启动路径 - 优先加载关键数据
+        Task(priority: .userInitiated) { await loadEssentialData() }
+        
+        // 完整数据加载延迟执行
+        Task(priority: .background) { await loadFullDataAsync() }
     }
     
-    private func loadDataAsync() async {
-        // 加载规则
+    // 快速加载关键数据（启动时立即执行）
+    private func loadEssentialData() async {
+        // 1. 优先加载规则（UI 需要）
         if let data = try? Data(contentsOf: rulesURL),
            let decoded = try? JSONDecoder().decode([ContextRule].self, from: data) {
             await MainActor.run { self.contextRules = decoded }
@@ -179,7 +227,6 @@ class StorageManager: ObservableObject {
             await MainActor.run { self.contextRules = ContextRule.defaults }
         }
         
-        // 加载预言家规则
         if let data = try? Data(contentsOf: predictorRulesURL),
            let decoded = try? JSONDecoder().decode([AppContextRule].self, from: data) {
             await MainActor.run { self.predictorRules = decoded }
@@ -187,7 +234,6 @@ class StorageManager: ObservableObject {
             await MainActor.run { self.predictorRules = ContextPredictor.defaultRules }
         }
         
-        // 加载智能标签规则
         if let data = try? Data(contentsOf: techRulesURL),
            let decoded = try? JSONDecoder().decode([TechDetectionRule].self, from: data) {
             await MainActor.run { self.techDetectionRules = decoded }
@@ -195,28 +241,67 @@ class StorageManager: ObservableObject {
             await MainActor.run { self.techDetectionRules = TechDetectionRule.defaults }
         }
         
+        // 2. 只加载前 20 个高频路径（快速启动）
+        if let data = try? Data(contentsOf: fileURL),
+           let decoded = try? JSONDecoder().decode([PathItem].self, from: data) {
+            // 简单去重
+            var mergedMap: [String: PathItem] = [:]
+            for item in decoded {
+                var normalized = item.path
+                if normalized.hasSuffix("/") && normalized.count > 1 { normalized.removeLast() }
+                
+                if let existing = mergedMap[normalized] {
+                    mergedMap[normalized]!.visitCount = max(existing.visitCount, item.visitCount)
+                    if item.lastVisitedAt > existing.lastVisitedAt {
+                        mergedMap[normalized]!.lastVisitedAt = item.lastVisitedAt
+                    }
+                    if item.isFavorite { mergedMap[normalized]!.isFavorite = true }
+                } else {
+                    mergedMap[normalized] = item
+                }
+            }
+            
+            let topItems = Array(mergedMap.values.sorted { $0.score > $1.score }.prefix(20))
+            await MainActor.run { 
+                self.items = topItems
+                // 立即刷新前 5 个项目的元数据
+                for item in topItems.prefix(5) {
+                    self.refreshMetadata(for: item.id, priority: .userInitiated)
+                }
+            }
+        }
+    }
+    
+    // 完整数据加载（后台执行）
+    private func loadFullDataAsync() async {
         // 加载评分权重字典
         if let data = try? Data(contentsOf: scoringWeightsURL),
            let decoded = try? JSONDecoder().decode([String: Double].self, from: data) {
             await MainActor.run { self.customPathWeights = decoded }
         }
         
-        if let data = try? Data(contentsOf: excludeURL), let decoded = try? JSONDecoder().decode(Set<String>.self, from: data) {
+        // 加载排除路径
+        if let data = try? Data(contentsOf: excludeURL), 
+           let decoded = try? JSONDecoder().decode(Set<String>.self, from: data) {
             await MainActor.run { self.excludedPaths = decoded }
         }
-        if let data = try? Data(contentsOf: historyURL), let decoded = try? JSONDecoder().decode([JumpRecord].self, from: data) {
+        
+        // 加载历史记录
+        if let data = try? Data(contentsOf: historyURL), 
+           let decoded = try? JSONDecoder().decode([JumpRecord].self, from: data) {
             await MainActor.run { self.jumpHistory = decoded }
         }
+        
+        // 加载完整的路径列表
         var loadedItems: [PathItem] = []
-        if let data = try? Data(contentsOf: fileURL), var decoded = try? JSONDecoder().decode([PathItem].self, from: data) {
-            // 对现有存量数据进行标准化和去重合并
+        if let data = try? Data(contentsOf: fileURL), 
+           let decoded = try? JSONDecoder().decode([PathItem].self, from: data) {
             var mergedMap: [String: PathItem] = [:]
-            for var item in decoded {
+            for item in decoded {
                 var normalized = item.path
                 if normalized.hasSuffix("/") && normalized.count > 1 { normalized.removeLast() }
                 
                 if let existing = mergedMap[normalized] {
-                    // 合并：保留较高的访问次数，较新的访问时间，以及收藏状态
                     mergedMap[normalized]!.visitCount = max(existing.visitCount, item.visitCount)
                     if item.lastVisitedAt > existing.lastVisitedAt {
                         mergedMap[normalized]!.lastVisitedAt = item.lastVisitedAt
@@ -229,9 +314,9 @@ class StorageManager: ObservableObject {
             loadedItems = Array(mergedMap.values)
         }
         
+        // 合并 autojump 数据
         let autojumpItems = await parseAutojump()
         for item in autojumpItems {
-            // 确保 autojump 的路径也经过标准化
             var normalized = item.path
             if normalized.hasSuffix("/") && normalized.count > 1 { normalized.removeLast() }
             
@@ -240,17 +325,23 @@ class StorageManager: ObservableObject {
                 if p.hasSuffix("/") && p.count > 1 { p.removeLast() }
                 return p == normalized 
             }) {
-                if item.visitCount > loadedItems[index].visitCount { loadedItems[index].visitCount = item.visitCount }
-            } else { loadedItems.append(item) }
+                if item.visitCount > loadedItems[index].visitCount { 
+                    loadedItems[index].visitCount = item.visitCount 
+                }
+            } else { 
+                loadedItems.append(item) 
+            }
         }
-        let finalItems = loadedItems // sort happens in recalculateScores if needed, but initial sort is good
+        
+        // 更新到主线程
         await MainActor.run { 
-            self.items = finalItems 
+            self.items = loadedItems
             self.recalculateScores()
         }
     }
     
     func recalculateScores() {
+
         // 触发 UI 更新：排序
         self.items.sort { $0.score > $1.score }
     }
@@ -361,10 +452,17 @@ class StorageManager: ObservableObject {
             normalizedPath.removeLast()
         }
         
-        let record = JumpRecord(path: normalizedPath, timestamp: Date(), actionType: actionType)
         DispatchQueue.main.async {
-            self.jumpHistory.append(record)
-            if self.jumpHistory.count > 2000 { self.jumpHistory.removeFirst() }
+            // 去重逻辑：如果最后一条记录路径相同且在 5 分钟内，则只更新时间
+            if let lastIndex = self.jumpHistory.indices.last,
+               self.jumpHistory[lastIndex].path == normalizedPath,
+               abs(self.jumpHistory[lastIndex].timestamp.timeIntervalSinceNow) < 300 {
+                self.jumpHistory[lastIndex].timestamp = Date()
+            } else {
+                let record = JumpRecord(path: normalizedPath, timestamp: Date(), actionType: actionType)
+                self.jumpHistory.append(record)
+                if self.jumpHistory.count > 500 { self.jumpHistory.removeFirst() }
+            }
             self.saveHistory()
         }
     }
@@ -391,10 +489,10 @@ class StorageManager: ObservableObject {
         }
     }
     
-    func refreshMetadata(for id: UUID) {
+    func refreshMetadata(for id: UUID, priority: TaskPriority = .background) {
         guard let index = items.firstIndex(where: { $0.id == id }) else { return }
         let path = items[index].path
-        Task {
+        Task(priority: priority) {
             let result = await FolderAnalyzer.shared.analyze(path: path)
             await MainActor.run {
                 if let idx = self.items.firstIndex(where: { $0.id == id }) {

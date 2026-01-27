@@ -15,8 +15,18 @@ struct PathItem: Identifiable, Codable, Equatable {
     var statusSummary: String? = nil // 如 "5 files changed (Git)", "Modified 2m ago"
     var actions: [ContextAction] = [] // 智能上下文动作
     
+    // --- 性能优化：score 缓存 ---
+    private var cachedScore: Double?
+    private var scoreCalculatedAt: Date?
+    
     enum SourceType: String, Codable {
         case manual, finderHistory, clipboard
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case id, path, alias, visitCount, lastVisitedAt, isFavorite, source
+        case tags, technology, statusSummary, actions
+        // 不序列化缓存字段
     }
     
     init(id: UUID = UUID(), path: String, alias: String, visitCount: Int = 1, lastVisitedAt: Date = Date(), isFavorite: Bool = false, source: SourceType) {
@@ -30,6 +40,21 @@ struct PathItem: Identifiable, Codable, Equatable {
     }
     
     var score: Double {
+        // 缓存 5 秒，避免频繁重复计算
+        if let cached = cachedScore,
+           let calculatedAt = scoreCalculatedAt,
+           Date().timeIntervalSince(calculatedAt) < 5 {
+            return cached
+        }
+        
+        let newScore = calculateScore()
+        var mutableSelf = self
+        mutableSelf.cachedScore = newScore
+        mutableSelf.scoreCalculatedAt = Date()
+        return newScore
+    }
+    
+    private func calculateScore() -> Double {
         let sm = StorageManager.shared
         let timeInterval = Date().timeIntervalSince(lastVisitedAt)
         

@@ -8,12 +8,24 @@
 "Prediction" = "Prediction";
 "Interface" = "Interface";
 "Scoring" = "Scoring";
+"Location" = "Location";
+"Status" = "Status";
+"Usage" = "Usage";
+"Visits" = "Visits";
+"Score" = "Score";
+"Context Actions" = "Context Actions";
+"Click to open in Finder" = "Click to open in Finder";
 
 // Language
 "Language" = "Language";
 "App Language" = "App Language";
 "System Default" = "System Default";
 "Restart Now" = "Restart Now";
+"App Appearance" = "App Appearance";
+"Appearance" = "Appearance";
+"System" = "System";
+"Light" = "Light";
+"Dark" = "Dark";
 "Please restart the app to apply language changes." = "Please restart the app to apply language changes.";
 
 // Shortcuts
@@ -27,6 +39,12 @@
 "Customize Action Shortcuts" = "Customize Action Shortcuts";
 "Recording..." = "Recording...";
 "Reset to Defaults" = "Reset to Defaults";
+"Action Shortcuts" = "Action Shortcuts";
+"Startup" = "Startup";
+"Launch at Login" = "Launch at Login";
+"Launch Arguments" = "Launch Arguments";
+"e.g. --minimized" = "e.g. --minimized";
+"These arguments will be processed whenever the app starts." = "These arguments will be processed whenever the app starts.";
 
 // Data Management
 "Data Management" = "Data Management";
@@ -37,6 +55,7 @@
 "Preferred Apps" = "Preferred Apps";
 "Editor" = "Editor";
 "Terminal" = "Terminal";
+"Choose..." = "Choose...";
 
 // Exclusions
 "Excluded Paths" = "Excluded Paths";
@@ -80,6 +99,9 @@
 "Exclude Path" = "Exclude Path";
 "Exclude from list" = "Exclude from list";
 "Preview" = "Preview";
+"Details" = "Details";
+"Tabs" = "Tabs";
+"Exclude" = "Exclude";
 "Fav" = "Fav";
 "Term" = "Term";
 "Set Alias" = "Set Alias";
@@ -91,8 +113,13 @@
 "Searching File System..." = "Searching File System...";
 "No items found" = "No items found";
 "items" = "items";
-"Recent" = "Recent";
+"Focus" = "Focus";
 "Favorites" = "Favorites";
+"History" = "Footprints";
+"Today" = "Today";
+"Yesterday" = "Yesterday";
+"This Week" = "This Week";
+"Earlier" = "Earlier";
 "View Insights" = "View Insights";
 
 // Insights
@@ -100,6 +127,8 @@
 "Your productivity dashboard" = "Your productivity dashboard";
 "Jumps Today" = "Jumps Today";
 "Jumps Weekly" = "Jumps Weekly";
+"Focus Folders" = "Focus Folders";
+"No focus folders found." = "No focus folders found.";
 "Time Saved" = "Time Saved";
 "Total Jumps" = "Total Jumps";
 "Top Destination (Weekly)" = "Top Destination (Weekly)";

@@ -1,6 +1,7 @@
 import Foundation
 
 enum WayPointTab: String, CaseIterable {
-    case recent
+    case focus
     case favorites
+    case history
 }

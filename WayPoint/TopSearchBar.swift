@@ -59,7 +59,7 @@ struct SettingsButton: View {
                 .frame(width: 32, height: 32)
                 .background(
                     Circle()
-                        .fill(isHovering ? ColorTheme.Interactive.hover : Color.clear)
+                        .fill(isHovering ? ColorTheme.Interactive.hover(colorScheme) : Color.clear)
                 )
         }
         .buttonStyle(.plain)
@@ -79,12 +79,12 @@ struct TabArea: View {
     var body: some View {
         HStack(spacing: DesignSystem.Spacing.md) {
             TabButton(
-                title: "Recent", 
-                icon: "clock.arrow.circlepath", 
-                isActive: activeTab == .recent
+                title: "Focus", 
+                icon: "target", 
+                isActive: activeTab == .focus
             ) {
                 withAnimation(DesignSystem.Animation.springQuick) { 
-                    vm.activeTab = .recent 
+                    vm.activeTab = .focus 
                 }
             }
             
@@ -95,6 +95,16 @@ struct TabArea: View {
             ) {
                 withAnimation(DesignSystem.Animation.springQuick) { 
                     vm.activeTab = .favorites 
+                }
+            }
+ 
+            TabButton(
+                title: "History", 
+                icon: "shoeprints.fill", 
+                isActive: activeTab == .history
+            ) {
+                withAnimation(DesignSystem.Animation.springQuick) { 
+                    vm.activeTab = .history 
                 }
             }
             

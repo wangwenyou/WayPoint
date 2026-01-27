@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 // MARK: - 快捷键标签组件
 struct ShortcutLabel: View {
@@ -41,6 +42,7 @@ struct TabButton: View {
             .background(isActive ? Color.blue.opacity(0.1) : Color.clear)
             .foregroundColor(isActive ? .blue : .secondary)
             .cornerRadius(8)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -81,5 +83,38 @@ struct EmptyStateView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - 文件图标
+struct FileIconView: View {
+    let path: String
+    let isSelected: Bool
+    var size: CGFloat = 64
+    @State private var icon: NSImage?
+    
+    var body: some View {
+        ZStack {
+            if let icon = icon {
+                Image(nsImage: icon)
+                    .resizable()
+                    .renderingMode(.original)
+                    .aspectRatio(contentMode: .fit)
+            } else {
+                Image(systemName: "folder")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .foregroundColor(isSelected ? .white : .secondary)
+            }
+        }
+        .onAppear { loadIcon() }
+        .onChange(of: path) { _ in loadIcon() }
+    }
+    
+    private func loadIcon() {
+        let url = URL(fileURLWithPath: path)
+        let icon = NSWorkspace.shared.icon(forFile: url.path)
+        icon.size = NSSize(width: size, height: size)
+        self.icon = icon
     }
 }

@@ -29,6 +29,15 @@
 *   **⭐️ Favorites & History:** Pin frequently used paths to your "Favorites" tab for permanent access.
 *   **🤖 System Search:** Seamlessly falls back to Spotlight search (`mdfind`) when a local match isn't found.
 
+## 🧩 Navigation Tabs
+
+WayPoint provides three distinct views to help you find the right path at the right time:
+
+*   **🎯 Focus (Smart):** The default view. It uses an intelligent algorithm that considers visit frequency, recency, and context prediction (e.g., boosting project paths related to your currently running apps). It's designed to surface the paths you most likely need *right now*.
+*   **⭐ Favorites (Manual):** User-curated list. This tab is persistent and keeps the folders you've manually "starred" easily accessible, regardless of how often you visit them.
+*   **👣 Footprints (Chronological):** A simple, time-ordered log of your recent activity. It's the best way to trace back where you've been in the last few minutes or hours.
+
+
 ## 🛠 Installation & Build
 
 ### Prerequisites

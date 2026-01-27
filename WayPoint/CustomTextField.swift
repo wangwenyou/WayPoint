@@ -15,6 +15,8 @@ struct CustomTextField: NSViewRepresentable {
     var placeholder: String = ""
     var onUpArrow: () -> Void
     var onDownArrow: () -> Void
+    var onLeftArrow: (() -> Void)?
+    var onRightArrow: (() -> Void)?
     var onReturn: () -> Void
     var onCommandReturn: () -> Void
     var onOptionReturn: () -> Void
@@ -25,6 +27,7 @@ struct CustomTextField: NSViewRepresentable {
     var onCommandDelete: (() -> Void)?
     var onTab: (() -> Void)?
     var onPreview: (() -> Void)?
+    var onCommandI: (() -> Void)?
     
     func makeNSView(context: Context) -> NSView {
         let containerView = NSView()
@@ -50,6 +53,8 @@ struct CustomTextField: NSViewRepresentable {
         
         context.coordinator.onUpArrow = onUpArrow
         context.coordinator.onDownArrow = onDownArrow
+        context.coordinator.onLeftArrow = onLeftArrow
+        context.coordinator.onRightArrow = onRightArrow
         context.coordinator.onReturn = onReturn
         context.coordinator.onCommandReturn = onCommandReturn
         context.coordinator.onOptionReturn = onOptionReturn
@@ -60,6 +65,7 @@ struct CustomTextField: NSViewRepresentable {
         context.coordinator.onCommandDelete = onCommandDelete
         context.coordinator.onTab = onTab
         context.coordinator.onPreview = onPreview
+        context.coordinator.onCommandI = onCommandI
         
         containerView.addSubview(textField)
         textField.translatesAutoresizingMaskIntoConstraints = false
@@ -88,7 +94,7 @@ struct CustomTextField: NSViewRepresentable {
     class Coordinator: NSObject, NSTextFieldDelegate {
         var parent: CustomTextField
         weak var textField: NSTextField?
-        var onUpArrow, onDownArrow, onReturn, onCommandReturn, onOptionReturn, onEscape, onCommandT, onCommandC, onCommandF, onCommandDelete, onTab, onPreview: (() -> Void)?
+        var onUpArrow, onDownArrow, onLeftArrow, onRightArrow, onReturn, onCommandReturn, onOptionReturn, onEscape, onCommandT, onCommandC, onCommandF, onCommandDelete, onTab, onPreview, onCommandI: (() -> Void)?
         
         init(_ parent: CustomTextField) { self.parent = parent }
         
@@ -101,6 +107,8 @@ struct CustomTextField: NSViewRepresentable {
             switch commandSelector {
             case #selector(NSResponder.moveUp(_:)): onUpArrow?(); return true
             case #selector(NSResponder.moveDown(_:)): onDownArrow?(); return true
+            case #selector(NSResponder.moveLeft(_:)): onLeftArrow?(); return true
+            case #selector(NSResponder.moveRight(_:)): onRightArrow?(); return true
             case #selector(NSResponder.insertNewline(_:)):
                 let modifiers = NSEvent.modifierFlags
                 if modifiers.contains(.command) { onCommandReturn?() }
@@ -150,6 +158,25 @@ class KeyInterceptingTextField: NSTextField {
             }
             return true // 阻止事件继续传递
         }
+        
+        // 捕获 Cmd + I
+        if event.keyCode == 34 && event.modifierFlags.intersection([.command, .option, .control, .shift]) == .command {
+            delegate.onCommandI?()
+            return true
+        }
+        
         return super.performKeyEquivalent(with: event)
+    }
+    
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        NotificationCenter.default.removeObserver(self, name: NSWindow.didBecomeKeyNotification, object: nil)
+        if let window = self.window {
+            NotificationCenter.default.addObserver(self, selector: #selector(windowDidBecomeKey), name: NSWindow.didBecomeKeyNotification, object: window)
+        }
+    }
+    
+    @objc private func windowDidBecomeKey() {
+        self.selectText(nil)
     }
 }

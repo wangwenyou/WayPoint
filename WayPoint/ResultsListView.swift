@@ -31,7 +31,15 @@ struct ListRows: View {
     var body: some View {
         LazyVStack(spacing: 2) {
             ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                ResultRow(item: item, isSelected: index == selectedIndex) { actionType in
+                let isFootprints = vm.activeTab == .history && vm.query.isEmpty
+                
+                ResultRow(
+                    item: item,
+                    isSelected: index == selectedIndex,
+                    isMinimal: isFootprints,
+                    isLast: index == items.count - 1, // 传入最后一行标记
+                    dateHeader: isFootprints && shouldShowDateHeader(at: index) ? dateTitle(for: item.lastVisitedAt) : nil
+                ) { actionType in
                     vm.executeAction(type: actionType, targetItem: item)
                 }
                 .id(item.id)
@@ -41,6 +49,23 @@ struct ListRows: View {
                 }
             }
         }
-        .padding(.vertical, 8)
+    }
+    
+    private func shouldShowDateHeader(at index: Int) -> Bool {
+        if index == 0 { return true }
+        let calendar = Calendar.current
+        let currentItem = items[index]
+        let previousItem = items[index - 1]
+        return !calendar.isDate(currentItem.lastVisitedAt, inSameDayAs: previousItem.lastVisitedAt)
+    }
+    
+    private func dateTitle(for date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) { return NSLocalizedString("Today", comment: "") }
+        if calendar.isDateInYesterday(date) { return NSLocalizedString("Yesterday", comment: "") }
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MM-dd"
+        return formatter.string(from: date)
     }
 }

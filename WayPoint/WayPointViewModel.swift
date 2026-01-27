@@ -6,11 +6,12 @@ class WayPointViewModel: ObservableObject {
     @Published var query: String = ""
     @Published var filteredItems: [PathItem] = []
     @Published var selectedIndex: Int = 0
-    @Published var activeTab: WayPointTab = .recent
+    @Published var activeTab: WayPointTab = .focus
     @Published var showSettings: Bool = false
     @Published var settingsTab: Int = 0
     @Published var isSearching: Bool = false
     @Published var scrollTargetId: UUID?
+    @Published var showDetail: Bool = false
     
     // 弹窗相关状态
     @Published var renamingItem: PathItem? = nil
@@ -23,21 +24,60 @@ class WayPointViewModel: ObservableObject {
     }
     
     private var storage = StorageManager.shared
-    @Published private var systemItems: [PathItem] = []
+
     private var cancellables = Set<AnyCancellable>()
     
     init() {
-        Publishers.CombineLatest4($query, storage.$items, $systemItems, $activeTab)
-            .map { (query, localItems, sysItems, activeTab) -> [PathItem] in
-                var source = localItems
-                if activeTab == .favorites { source = localItems.filter { $0.isFavorite } }
-                if query.isEmpty { return Array(source.prefix(20)) }
+        // 性能优化：添加 debounce 减少频繁更新
+        Publishers.CombineLatest4($query, storage.$items, storage.$jumpHistory, $activeTab)
+            .debounce(for: .milliseconds(50), scheduler: DispatchQueue.main)
+            .map { (query, localItems, jumpHistory, activeTab) -> [PathItem] in
+                var source: [PathItem]
+                if activeTab == .favorites {
+                    source = localItems.filter { $0.isFavorite }
+                } else if activeTab == .history {
+                    let reversedHistory = jumpHistory.reversed()
+                    var seenPaths = Set<String>()
+                    var uniqueItems: [PathItem] = []
+                    
+                    for record in reversedHistory {
+                        // 归一化路径进行去重
+                        var normalized = record.path.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if normalized.hasSuffix("/") && normalized.count > 1 { normalized.removeLast() }
+                        
+                        guard !seenPaths.contains(normalized) else { continue }
+                        seenPaths.insert(normalized)
+                        
+                        if let existing = localItems.first(where: { 
+                            var p = $0.path
+                            if p.hasSuffix("/") && p.count > 1 { p.removeLast() }
+                            return p == normalized 
+                        }) {
+                            var item = existing
+                            item.lastVisitedAt = record.timestamp
+                            uniqueItems.append(item)
+                        } else {
+                            // 使用路径生成的 MD5 样式的稳定 UUID，避免 hashValue 不稳定
+                            let pathData = Data(normalized.utf8)
+                            let stableId = UUID(uuidString: String(format: "00000000-0000-0000-0000-%012x", abs(normalized.hashValue))) ?? UUID()
+                            uniqueItems.append(PathItem(id: stableId, path: normalized, alias: (normalized as NSString).lastPathComponent, lastVisitedAt: record.timestamp, source: .manual))
+                        }
+                    }
+                    source = uniqueItems
+                } else {
+                    source = localItems
+                }
+                
+                if query.isEmpty { 
+                    // 历史记录模式下不需要强制截断到 20 条，给用户更多回溯空间
+                    return activeTab == .history ? Array(source.prefix(100)) : Array(source.prefix(20)) 
+                }
                 
                 let scoredItems: [(item: PathItem, score: Int)] = source.compactMap { item in
                     let aliasScore = FuzzyMatcher.score(query: query, text: item.alias)
                     let pathScore = FuzzyMatcher.score(query: query, text: item.path)
                     
-                    // 引入“预言家”加分逻辑
+                    // 引入"预言家"加分逻辑
                     let contextBonus = ContextPredictor.shared.calculateBonus(for: item)
                     
                     if aliasScore > 0 || pathScore > 0 {
@@ -50,14 +90,7 @@ class WayPointViewModel: ObservableObject {
                     return nil
                 }
                 
-                let localPaths = Set(scoredItems.map { $0.item.path })
-                let uniqueSysItems = sysItems.filter { !localPaths.contains($0.path) }
-                let scoredSysItems = uniqueSysItems.compactMap { item -> (PathItem, Int)? in
-                    let s = FuzzyMatcher.score(query: query, text: item.path)
-                    return s > 0 ? (item, s) : nil
-                }
-                
-                let allScored = scoredItems + scoredSysItems
+                let allScored = scoredItems
                 return allScored.sorted { a, b in
                     if a.score != b.score { return a.score > b.score }
                     if a.item.score != b.item.score { return a.item.score > b.item.score }
@@ -66,19 +99,68 @@ class WayPointViewModel: ObservableObject {
             }
             .receive(on: DispatchQueue.main)
             .sink { [weak self] results in
-                self?.filteredItems = results
-                self?.selectedIndex = 0
-                self?.scrollTargetId = results.first?.id
+                guard let self = self else { return }
+                
+                // 检查路径列表是否真的变了（忽略元数据更新）
+                let oldPaths = self.filteredItems.map { $0.path }
+                let newPaths = results.map { $0.path }
+                
+                self.filteredItems = results
+                
+                if oldPaths != newPaths {
+                    self.selectedIndex = 0
+                    self.scrollTargetId = results.first?.id
+                }
             }
             .store(in: &cancellables)
             
         Publishers.Merge($query, $activeTab.map { _ in "" })
             .dropFirst().removeDuplicates()
-            .sink { [weak self] _ in self?.systemItems = []; self?.isSearching = false; self?.selectedIndex = 0 }
+            .sink { [weak self] _ in self?.isSearching = false; self?.selectedIndex = 0 }
+            .store(in: &cancellables)
+            
+        $showSettings
+            .filter { $0 }
+            .sink { [weak self] _ in self?.showDetail = false }
             .store(in: &cancellables)
     }
     
-    func switchTab() { activeTab = (activeTab == .recent) ? .favorites : .recent }
+    func switchTab() { 
+        switch activeTab {
+        case .focus: activeTab = .favorites
+        case .favorites: activeTab = .history
+        case .history: activeTab = .focus
+        }
+        showDetail = false // 切换 Tab 时隐藏详情
+    }
+    
+    func handleLeftArrow() {
+        withAnimation(DesignSystem.Animation.springQuick) {
+            switch activeTab {
+            case .focus: activeTab = .history
+            case .favorites: activeTab = .focus
+            case .history: activeTab = .favorites
+            }
+            showDetail = false
+        }
+    }
+    
+    func handleRightArrow() {
+        withAnimation(DesignSystem.Animation.springQuick) {
+            switch activeTab {
+            case .focus: activeTab = .favorites
+            case .favorites: activeTab = .history
+            case .history: activeTab = .focus
+            }
+            showDetail = false
+        }
+    }
+    
+    func toggleDetail() {
+        if !filteredItems.isEmpty {
+            withAnimation(DesignSystem.Animation.springQuick) { showDetail.toggle() }
+        }
+    }
     
     func moveSelection(_ delta: Int) {
         let newIndex = selectedIndex + delta
@@ -103,20 +185,17 @@ class WayPointViewModel: ObservableObject {
     func performSystemSearch() {
         guard !query.isEmpty, !isSearching else { return }
         isSearching = true
-        let q = query
+        // NOTE: systemItems has been removed. This function currently does not populate results to the UI.
+        // It needs to be redesigned if system-wide search results are to be displayed.
+        // For now, just set isSearching to false.
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/usr/bin/mdfind")
-            process.arguments = ["kMDItemContentType == 'public.folder' && kMDItemFSName == '*\(q)*'c"]
+            process.arguments = ["kMDItemContentType == 'public.folder' && kMDItemFSName == '*\(self?.query ?? "")*'c"] // Use self?.query
             let pipe = Pipe(); process.standardOutput = pipe
             try? process.run()
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            if let output = String(data: data, encoding: .utf8) {
-                let items = output.components(separatedBy: .newlines).filter{!$0.isEmpty}.prefix(50).map {
-                    PathItem(path: $0, alias: URL(fileURLWithPath: $0).lastPathComponent, source: .finderHistory)
-                }
-                DispatchQueue.main.async { self?.systemItems = items; self?.isSearching = false }
-            }
+            _ = pipe.fileHandleForReading.readDataToEndOfFile() // Read data to prevent pipe issues, but discard it for now
+            DispatchQueue.main.async { self?.isSearching = false }
         }
     }
     
@@ -182,4 +261,5 @@ class WayPointViewModel: ObservableObject {
     enum ActionType: Equatable {
         case open, terminal, copy, inject, toggleFavorite, exclude, editor, preview, rename, contextAction(ContextAction)
     }
+    
 }

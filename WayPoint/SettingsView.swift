@@ -378,6 +378,24 @@ struct GeneralSettingsContent: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
+                SettingsCard("Startup") {
+                    VStack(spacing: 0) {
+                        ToggleRow(label: "Launch at Login", isOn: $storage.launchAtLogin)
+                    }
+                }.padding(.bottom, 12)
+
+                SettingsCard("Appearance") {
+                    SettingsRow(label: "App Appearance") {
+                        Picker("", selection: $storage.appAppearance) {
+                            ForEach(AppAppearance.allCases) { Text($0.label).tag($0) }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .controlSize(.small)
+                        .frame(width: 180)
+                    }
+                }.padding(.bottom, 12)
+                
                 SettingsCard("Language") {
                     SettingsRow(label: "App Language") {
                         Picker("", selection: $languageManager.currentLanguage) { ForEach(AppLanguage.allCases) { Text($0.displayName).tag($0) } }.labelsHidden().controlSize(.small).frame(width: 150)
@@ -404,37 +422,6 @@ struct GeneralSettingsContent: View {
                     }.padding(12)
                 }.padding(.bottom, 12)
                 
-                SettingsCard("Data Management") {
-                    HStack(spacing: 20) {
-                        Button(NSLocalizedString("Import Settings", comment: "")) {
-                            let panel = NSOpenPanel()
-                            panel.allowedContentTypes = [.json]
-                            NSApp.activate(ignoringOtherApps: true)
-                            panel.beginSheetModal(for: AppDelegate.shared.panel) { response in
-                                if response == .OK, let url = panel.url {
-                                    _ = storage.importSettings(from: url)
-                                }
-                            }
-                        }
-                        
-                        Button(NSLocalizedString("Export Settings", comment: "")) {
-                            if let url = storage.exportSettings() {
-                                let panel = NSSavePanel()
-                                panel.allowedContentTypes = [.json]
-                                panel.nameFieldStringValue = "WayPoint_Settings.json"
-                                NSApp.activate(ignoringOtherApps: true)
-                                panel.beginSheetModal(for: AppDelegate.shared.panel) { response in
-                                    if response == .OK, let target = panel.url {
-                                        try? FileManager.default.removeItem(at: target)
-                                        try? FileManager.default.copyItem(at: url, to: target)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    .padding(12)
-                    .frame(maxWidth: .infinity)
-                }.padding(.bottom, 12)
             }.padding(20)
         }
     }
@@ -443,36 +430,39 @@ struct GeneralSettingsContent: View {
 struct ShortcutsSettingsContent: View {
     @ObservedObject var shortcutManager: LocalShortcutManager; @ObservedObject var storage: StorageManager; let editorPresets: [AppOption]; let terminalPresets: [AppOption]; @Binding var recordingAction: LocalAction?; var onUpdate: (LocalAction, NSEvent) -> Void
     var body: some View {
-        ScrollView {
-            VStack(spacing: 12) {
-                SettingsCard("Action Shortcuts") {
-                    let allActions = LocalAction.allCases
-                    VStack(spacing: 0) {
-                        ForEach(allActions) { action in
-                            // 关键：加上 id，强制在 resetToDefaults 时刷新
-                            ShortcutRow(action: action, shortcutManager: shortcutManager, recordingAction: $recordingAction, onUpdate: onUpdate)
-                                .id(action.rawValue + shortcutManager.shortcut(for: action).displayString)
-                            if action != allActions.last { Divider().padding(.horizontal, 15) }
+        VStack(spacing: 12) {
+            SettingsCard("Preferred Apps") {
+                VStack(spacing: 0) {
+                    SettingsRow(label: "Editor") { NativeDropdown(options: editorPresets, selection: $storage.preferredEditor) { chooseApp(for: .editor) }.frame(width: 200) }
+                    Divider().padding(.horizontal, 15)
+                    SettingsRow(label: "Terminal") { NativeDropdown(options: terminalPresets, selection: $storage.preferredTerminal) { chooseApp(for: .terminal) }.frame(width: 200) }
+                }
+            }
+
+            SettingsCard("Action Shortcuts") {
+                let allActions = LocalAction.allCases
+                VStack(spacing: 0) {
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            ForEach(allActions) { action in
+                                // 关键：加上 id，强制在 resetToDefaults 时刷新
+                                ShortcutRow(action: action, shortcutManager: shortcutManager, recordingAction: $recordingAction, onUpdate: onUpdate)
+                                    .id(action.rawValue + shortcutManager.shortcut(for: action).displayString)
+                                if action != allActions.last { Divider().padding(.horizontal, 15) }
+                            }
                         }
-                        
-                        Divider().padding(.horizontal, 15)
-                        HStack {
-                            Button(NSLocalizedString("Reset to Defaults", comment: "")) { 
-                                shortcutManager.resetToDefaults() 
-                            }.buttonStyle(.link).font(.system(size: 11))
-                            Spacer()
-                        }.padding(12)
                     }
+                    
+                    Divider().padding(.horizontal, 15)
+                    HStack {
+                        Button(NSLocalizedString("Reset to Defaults", comment: "")) { 
+                            shortcutManager.resetToDefaults() 
+                        }.buttonStyle(.link).font(.system(size: 11))
+                        Spacer()
+                    }.padding(12)
                 }
-                SettingsCard("Preferred Apps") {
-                    VStack(spacing: 0) {
-                        SettingsRow(label: "Editor") { NativeDropdown(options: editorPresets, selection: $storage.preferredEditor) { chooseApp(for: .editor) }.frame(width: 200) }
-                        Divider().padding(.horizontal, 15)
-                        SettingsRow(label: "Terminal") { NativeDropdown(options: terminalPresets, selection: $storage.preferredTerminal) { chooseApp(for: .terminal) }.frame(width: 200) }
-                    }
-                }
-            }.padding(20)
-        }
+            }
+        }.padding(20)
     }
     enum AppType { case editor, terminal }
     private func chooseApp(for type: AppType) {
@@ -536,48 +526,103 @@ struct ExclusionsSettingsContent: View {
 
 struct AboutSettingsView: View {
     @ObservedObject var updateChecker: UpdateChecker
+    @ObservedObject var storage = StorageManager.shared
+    
     var body: some View {
-        VStack(spacing: 20) {
-            Spacer().frame(height: 20); Image(nsImage: NSApp.applicationIconImage ?? NSImage()).resizable().frame(width: 80, height: 80)
-            VStack(spacing: 8) {
-                Text("WayPoint").font(.title).fontWeight(.bold)
-                if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String, let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String {
-                    let vLabel = NSLocalizedString("Version", comment: "")
-                    Text("\(vLabel) \(version) (Build \(build))").foregroundColor(.secondary)
+        ScrollView {
+            VStack(spacing: 24) {
+                VStack(spacing: 16) {
+                    Spacer().frame(height: 20)
+                    Image(nsImage: NSApp.applicationIconImage ?? NSImage())
+                        .resizable()
+                        .frame(width: 80, height: 80)
+                    
+                    VStack(spacing: 8) {
+                        Text("WayPoint").font(.title).fontWeight(.bold)
+                        if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
+                           let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String {
+                            let vLabel = NSLocalizedString("Version", comment: "")
+                            Text("\(vLabel) \(version) (Build \(build))").foregroundColor(.secondary)
+                        }
+                    }
+                    
+                    VStack(spacing: 12) {
+                        if updateChecker.isChecking {
+                            ProgressView().scaleEffect(0.8)
+                        } else {
+                            Button(NSLocalizedString("Check for Updates", comment: "")) {
+                                updateChecker.checkForUpdates(manual: true)
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                        
+                        if let error = updateChecker.lastError {
+                            Text(error).font(.caption).foregroundColor(.red)
+                        }
+                    }
                 }
+                
+                VStack(alignment: .leading, spacing: 16) {
+                    SettingsCard("Data Management") {
+                        HStack(spacing: 20) {
+                            Button(NSLocalizedString("Import Settings", comment: "")) {
+                                let panel = NSOpenPanel()
+                                panel.allowedContentTypes = [.json]
+                                NSApp.activate(ignoringOtherApps: true)
+                                panel.beginSheetModal(for: AppDelegate.shared.panel) { response in
+                                    if response == .OK, let url = panel.url {
+                                        _ = storage.importSettings(from: url)
+                                    }
+                                }
+                            }
+                            
+                            Button(NSLocalizedString("Export Settings", comment: "")) {
+                                if let url = storage.exportSettings() {
+                                    let panel = NSSavePanel()
+                                    panel.allowedContentTypes = [.json]
+                                    panel.nameFieldStringValue = "WayPoint_Settings.json"
+                                    NSApp.activate(ignoringOtherApps: true)
+                                    panel.beginSheetModal(for: AppDelegate.shared.panel) { response in
+                                        if response == .OK, let target = panel.url {
+                                            try? FileManager.default.removeItem(at: target)
+                                            try? FileManager.default.copyItem(at: url, to: target)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        .padding(12)
+                        .frame(maxWidth: .infinity)
+                    }
+                    
+                    VStack(alignment: .center, spacing: 8) {
+                        Text("© 2026 Wang Wenyou").font(.caption2).foregroundColor(.secondary.opacity(0.5))
+                        
+                        Button(action: { NSWorkspace.shared.open(URL(string: "https://wangwenyou.github.io/WayPoint/")!) }) {
+                            Text("https://wangwenyou.github.io/WayPoint/")
+                                .font(.system(size: 10))
+                                .foregroundColor(.blue)
+                                .underline()
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .padding(.horizontal, 20)
+                
+                Spacer().frame(height: 20)
             }
-            Divider().frame(width: 200)
-            VStack(spacing: 12) {
-                if updateChecker.isChecking { ProgressView().scaleEffect(0.8) }
-                else { 
-                    Button(NSLocalizedString("Check for Updates", comment: "")) { updateChecker.checkForUpdates(manual: true) }.buttonStyle(.borderedProminent) 
-                }
-                
-                // 关键修复：添加文字反馈，让用户知道检查结果，防止感觉“没反应”
-                if let error = updateChecker.lastError {
-                    Text(error).font(.caption).foregroundColor(.red)
-                } else if !updateChecker.isChecking && !updateChecker.showUpdateAlert && updateChecker.updateAvailable == nil {
-                    // 如果刚手动检查过且没弹窗没报错，说明已经是最新
-                }
-                
-                Text("© 2026 Wang Wenyou").font(.caption2).foregroundColor(.secondary.opacity(0.5))
-                
-                Button(action: { NSWorkspace.shared.open(URL(string: "https://wangwenyou.github.io/WayPoint/")!) }) {
-                    Text("https://wangwenyou.github.io/WayPoint/")
-                        .font(.system(size: 10))
-                        .foregroundColor(.blue)
-                        .underline()
-                }.buttonStyle(.plain)
-            }
-            Spacer()
         }
         .alert(isPresented: $updateChecker.showUpdateAlert) {
             if let update = updateChecker.updateAvailable {
                 let vLabel = NSLocalizedString("Version", comment: "")
                 let notes = update.releaseNotes[Locale.current.language.languageCode?.identifier == "zh" ? "zh-Hans" : "en"] ?? ""
                 return Alert(title: Text(NSLocalizedString("New Version Available", comment: "")), message: Text("\(vLabel) \(update.version)\n\n\(notes)"), primaryButton: .default(Text(NSLocalizedString("Download", comment: "")), action: { updateChecker.openDownloadLink() }), secondaryButton: .cancel())
-            } else if let error = updateChecker.lastError { return Alert(title: Text("Error"), message: Text(error), dismissButton: .default(Text("OK"))) 
-            } else { return Alert(title: Text(NSLocalizedString("Up to Date", comment: "")), message: Text(NSLocalizedString("You are using the latest version.", comment: "")), dismissButton: .default(Text("OK"))) }
+            } else if let error = updateChecker.lastError {
+                return Alert(title: Text("Error"), message: Text(error), dismissButton: .default(Text("OK")))
+            } else {
+                return Alert(title: Text(NSLocalizedString("Up to Date", comment: "")), message: Text(NSLocalizedString("You are using the latest version.", comment: "")), dismissButton: .default(Text("OK")))
+            }
         }
     }
 }

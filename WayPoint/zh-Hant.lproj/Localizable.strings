@@ -9,6 +9,12 @@
 "App Language" = "應用程式語言";
 "Please restart the app to apply language changes." = "請重啟應用程式以套用語言更改。";
 "Restart Now" = "立即重啟";
+"App Appearance" = "外觀模式";
+"Appearance" = "外觀";
+"System" = "跟隨系統";
+"System Default" = "跟隨系統";
+"Light" = "明亮";
+"Dark" = "暗黑";
 "Global Shortcut" = "全域快速鍵";
 "Main Hotkey to toggle WayPoint" = "用於切換 WayPoint 的全域熱鍵";
 "Show Time Saved in Menu Bar" = "在選單列顯示節省時間";
@@ -19,6 +25,12 @@
 "Customize Action Shortcuts" = "自訂操作快速鍵";
 "Recording..." = "錄製中...";
 "Reset to Defaults" = "恢復預設值";
+"Action Shortcuts" = "操作快速鍵";
+"Startup" = "啟動";
+"Launch at Login" = "登錄時自啟動";
+"Launch Arguments" = "啟動參數";
+"e.g. --minimized" = "例如：--minimized";
+"These arguments will be processed whenever the app starts." = "這些參數將在應用啟動時被處理。";
 
 /* Data Management */
 "Data Management" = "資料管理";
@@ -29,6 +41,7 @@
 "Preferred Apps" = "偏好應用程式";
 "Editor" = "編輯器";
 "Terminal" = "終端機";
+"Choose..." = "選擇...";
 
 /* Exclusions */
 "Excluded Paths" = "排除的路徑";
@@ -74,6 +87,9 @@
 "Exclude Path" = "排除路徑";
 "Exclude from list" = "從列表中排除";
 "Preview" = "預覽";
+"Details" = "詳情";
+"Tabs" = "標籤頁";
+"Exclude" = "排除";
 "Fav" = "收藏";
 "Term" = "終端機";
 "Set Alias" = "設定別名";
@@ -84,13 +100,14 @@
 "Add to Exclusions" = "添加到排除項目";
 
 /* Insights & Stats */
-"Recent" = "最近";
+"Focus" = "焦點";
 "Favorites" = "收藏";
+"History" = "足迹";
 "View Insights" = "查看洞察";
 "WayPoint Insights" = "WayPoint 洞察";
 "Your productivity dashboard" = "您的生產力儀表板";
-"Recent Folders" = "最近訪問資料夾";
-"No recent folders found." = "未發現訪問記錄。";
+"Focus Folders" = "焦點資料夾";
+"No focus folders found." = "暫無焦點資料夾記錄。";
 "Ranked by access frequency" = "按訪問頻率排序";
 "Jumps Today" = "今日跳轉";
 "Jumps Weekly" = "本周跳轉";
@@ -190,3 +207,12 @@
 "WayPoint needs Accessibility permissions to inject paths. Please enable it in System Settings." = "WayPoint 需要輔助功能權限來注入路徑。請在系統設定中啟用它。";
 "Open Settings" = "打開設定";
 "items" = "個項目";
+
+// About & Update
+"Version" = "版本";
+"Check for Updates" = "檢查更新";
+"Up to Date" = "已是最新版本";
+"You are using the latest version." = "您正在使用最新版本。";
+"New Version Available" = "發現新版本";
+"Download" = "下載更新";
+"Quickly navigate to your common directories" = "快速訪問您的常用目錄";
