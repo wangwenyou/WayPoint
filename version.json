@@ -2,8 +2,8 @@
   "version": "1.3.1",
   "build": 5,
   "releaseNotes": {
-    "en": "WayPoint 1.3.1: Enhanced Experience Update. Added 'Launch at Login' and 'App Appearance' settings. Introduced a new Path Detail Preview panel. Refined Settings UI, moving Data Management to the About tab and improving the Shortcuts list.",
-    "zh-Hans": "WayPoint 1.3.1: 体验优化更新。新增“开机自启动”与“应用外观”设置。引入全新的路径详情预览面板。优化设置界面布局，将数据管理移至关于页面，并改进了快捷键列表的滚动体验。"
+    "en": "WayPoint 1.3.1: Enhanced Experience Update. Added 'History' tab to track recent jumps. Added 'Launch at Login' and 'App Appearance' settings. Introduced a new Path Detail Preview panel. Refined Settings UI, moving Data Management to the About tab and improving the Shortcuts list.",
+    "zh-Hans": "WayPoint 1.3.1: 体验优化更新。新增“足迹”功能方便回溯历史。新增“开机自启动”与“应用外观”设置。引入全新的路径详情预览面板。优化设置界面布局，将数据管理移至关于页面，并改进了快捷键列表的滚动体验。"
   },
   "downloadUrl": "https://github.com/wangwenyou/WayPoint/releases/latest"
 }
